@@ -14,7 +14,11 @@
         }
         
         body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background: linear-gradient(rgba(26, 42, 108, 0.8), rgba(178, 31, 31, 0.8), rgba(253, 187, 45, 0.8)), 
+                        url('https://i.ibb.co/8Lrmg8BG/backback.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: white;
             min-height: 100vh;
             padding: 15px;
@@ -124,7 +128,6 @@
             animation: floatUp 0.8s ease-out forwards;
             z-index: 100;
             user-select: none;
-            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
         }
         
         @keyframes floatUp {
@@ -140,6 +143,36 @@
                 opacity: 0;
                 transform: translateY(-100px) scale(1.5);
             }
+        }
+        
+        /* Estilos para medallas SVG */
+        .medal-svg {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .medal.gold .medal-svg {
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+        }
+        
+        .medal.silver .medal-svg {
+            filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.5));
+        }
+        
+        .medal.bronze .medal-svg {
+            filter: drop-shadow(0 0 6px rgba(205, 127, 50, 0.5));
+        }
+        
+        .medal-small {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .medal-small .medal-svg {
+            width: 20px;
+            height: 20px;
         }
         
         /* Leaderboard Minimizado */
@@ -176,24 +209,22 @@
         }
         
         .medal {
-            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-right: 5px;
-            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
         }
         
         .gold {
             color: #FFD700;
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
         }
         
         .silver {
             color: #C0C0C0;
-            text-shadow: 0 0 6px rgba(192, 192, 192, 0.5);
         }
         
         .bronze {
             color: #CD7F32;
-            text-shadow: 0 0 6px rgba(205, 127, 50, 0.5);
         }
         
         .country-flag {
@@ -286,13 +317,6 @@
             font-weight: bold;
         }
         
-        .medal-small {
-            font-size: 1.2rem;
-            width: 20px;
-            text-align: center;
-            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-        }
-        
         .current-user {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2)) !important;
             border-left: 3px solid #ffeb3b;
@@ -316,10 +340,6 @@
             .country-flag {
                 width: 25px;
                 height: 16px;
-            }
-            
-            .medal {
-                font-size: 1.5rem;
             }
             
             .leaderboard-table th,
@@ -511,7 +531,7 @@
             const medal = getMedal(1);
             
             topCountryElement.innerHTML = `
-                <span class="medal ${medal.class}">${medal.icon}</span>
+                <div class="medal ${medal.class}">${medal.icon}</div>
                 <img src="https://flagcdn.com/w40/${topCountry.countryCode}.png" 
                      alt="${topCountry.countryName}" 
                      class="country-flag">
@@ -541,7 +561,7 @@
                 const rankCell = document.createElement('td');
                 rankCell.className = 'rank-cell';
                 rankCell.innerHTML = `
-                    <span class="medal-small ${medal.class}">${medal.icon}</span>
+                    <div class="medal-small ${medal.class}">${medal.icon}</div>
                     <span>${index + 1}</span>
                 `;
                 row.appendChild(rankCell);
@@ -569,15 +589,30 @@
         function getMedal(rank) {
             switch(rank) {
                 case 1:
-                    return { icon: '🥇', class: 'gold' };
+                    return { 
+                        icon: '<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#FFD700" stroke="#FFA500" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#000" font-size="10" font-weight="bold">1</text></svg>',
+                        class: 'gold' 
+                    };
                 case 2:
-                    return { icon: '🥈', class: 'silver' };
+                    return { 
+                        icon: '<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#C0C0C0" stroke="#A0A0A0" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#000" font-size="10" font-weight="bold">2</text></svg>',
+                        class: 'silver' 
+                    };
                 case 3:
-                    return { icon: '🥉', class: 'bronze' };
+                    return { 
+                        icon: '<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#CD7F32" stroke="#8B4513" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#000" font-size="10" font-weight="bold">3</text></svg>',
+                        class: 'bronze' 
+                    };
                 case 4:
-                    return { icon: '🏅', class: 'bronze' };
+                    return { 
+                        icon: '<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#CD7F32" stroke="#8B4513" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#000" font-size="10" font-weight="bold">4</text></svg>',
+                        class: 'bronze' 
+                    };
                 default:
-                    return { icon: '', class: '' };
+                    return { 
+                        icon: `<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#666" stroke="#444" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="10" font-weight="bold">${rank}</text></svg>`,
+                        class: '' 
+                    };
             }
         }
         
