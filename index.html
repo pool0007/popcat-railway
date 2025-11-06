@@ -15,7 +15,7 @@
         }
         
         body {
-            background: url('backback.png');
+            background: url('https://i.ibb.co/8Lrmg8BG/backback.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -76,6 +76,9 @@
             position: relative;
             user-select: none;
             touch-action: manipulation;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .cat-container:active {
@@ -86,17 +89,21 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: all 0.05s ease;
+            transition: all 0.08s ease; /* Un poco más lento para mejor visibilidad */
             border-radius: 20px;
+            -webkit-user-select: none;
+            -webkit-user-drag: none;
+            user-select: none;
         }
         
         .cat-image.open {
             filter: brightness(1);
+            transform: scale(1);
         }
         
         .cat-image.closed {
-            filter: brightness(0.8);
-            transform: scale(0.98);
+            filter: brightness(0.85);
+            transform: scale(0.92); /* Más pronunciado para mejor visibilidad */
         }
         
         .preload {
@@ -130,6 +137,23 @@
                 opacity: 0;
                 transform: translateY(-100px) scale(1.5);
             }
+        }
+        
+        /* Animación para el contador de clicks */
+        @keyframes clickBounce {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .click-bounce {
+            animation: clickBounce 0.3s ease;
         }
         
         .medal-svg {
@@ -213,6 +237,7 @@
             padding: 8px 15px;
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
         }
         
         .user-flag {
@@ -226,6 +251,7 @@
             font-size: 1.1rem;
             font-weight: bold;
             color: #ffeb3b;
+            transition: all 0.2s ease;
         }
         
         .medal {
@@ -466,7 +492,7 @@
         
         // Global variables
         let userClicks = 0;
-        let pendingClicks = 0; // Clientes pendientes de enviar al servidor
+        let pendingClicks = 0;
         let totalClicks = 0;
         let userCountry = "Unknown";
         let userCountryCode = "unknown";
@@ -477,6 +503,8 @@
         let currentLeaderboard = [];
         let isMouseDown = false;
         let clickStartTime = 0;
+        let lastClickTime = 0;
+        let clickCooldown = 100; // ms entre clicks
         
         // Sistema de audio mejorado para móviles
         let audioPool = [];
@@ -554,7 +582,7 @@
             preloadImages();
             
             await detectCountry();
-            await loadUserData(); // Cargar datos iniciales del usuario
+            await loadUserData();
             await loadLeaderboard();
             
             // Event listeners optimizados
@@ -600,65 +628,93 @@
             // Para desktop - mousedown/mouseup para imagen sostenida
             catContainer.addEventListener('mousedown', function(e) {
                 e.preventDefault();
-                isMouseDown = true;
-                clickStartTime = Date.now();
-                changeToClosedImage();
+                handleInteractionStart(e);
             });
             
             catContainer.addEventListener('mouseup', function(e) {
                 if (isMouseDown) {
-                    const clickDuration = Date.now() - clickStartTime;
-                    isMouseDown = false;
-                    
-                    if (clickDuration < 200) {
-                        handleValidClick(e);
-                    }
-                    
-                    changeToOpenImage();
+                    handleInteractionEnd(e);
                 }
             });
             
             catContainer.addEventListener('mouseleave', function(e) {
                 if (isMouseDown) {
-                    isMouseDown = false;
-                    changeToOpenImage();
+                    handleInteractionCancel();
                 }
             });
             
-            // Para móviles - touchstart/touchend
+            // Para móviles - touchstart/touchend optimizados
             catContainer.addEventListener('touchstart', function(e) {
                 e.preventDefault();
-                isMouseDown = true;
-                clickStartTime = Date.now();
-                changeToClosedImage();
-                
-                // Reproducir sonido inmediatamente en touchstart para mejor respuesta
-                playClickSound();
+                handleInteractionStart(e);
             }, { passive: false });
             
             catContainer.addEventListener('touchend', function(e) {
                 if (isMouseDown) {
-                    const clickDuration = Date.now() - clickStartTime;
-                    isMouseDown = false;
-                    
-                    if (clickDuration < 200) {
-                        handleValidClick(e);
-                    } else {
-                        // Si fue un touch largo, solo crear el popup sin sonido adicional
-                        createClickPopup(e);
-                        registerLocalClick();
-                    }
-                    
-                    changeToOpenImage();
+                    handleInteractionEnd(e);
                 }
             });
             
             catContainer.addEventListener('touchcancel', function(e) {
                 if (isMouseDown) {
-                    isMouseDown = false;
-                    changeToOpenImage();
+                    handleInteractionCancel();
                 }
             });
+            
+            // Prevenir acciones no deseadas en móviles
+            catContainer.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            catContainer.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+        }
+        
+        // NUEVAS FUNCIONES PARA MANEJAR INTERACCIONES
+        function handleInteractionStart(event) {
+            const now = Date.now();
+            if (now - lastClickTime < clickCooldown) return;
+            
+            isMouseDown = true;
+            clickStartTime = now;
+            changeToClosedImage();
+            
+            // Reproducir sonido inmediatamente en móviles
+            if ('ontouchstart' in window) {
+                playClickSound();
+            }
+        }
+        
+        function handleInteractionEnd(event) {
+            const now = Date.now();
+            const clickDuration = now - clickStartTime;
+            isMouseDown = false;
+            
+            // Cooldown para evitar clicks múltiples rápidos
+            if (now - lastClickTime < clickCooldown) {
+                changeToOpenImage();
+                return;
+            }
+            
+            lastClickTime = now;
+            
+            if (clickDuration < 500) { // Click válido si es menor a 500ms
+                handleValidClick(event);
+            } else {
+                // Si fue un touch largo, solo crear el popup
+                createClickPopup(event);
+                registerLocalClick();
+            }
+            
+            changeToOpenImage();
+        }
+        
+        function handleInteractionCancel() {
+            isMouseDown = false;
+            changeToOpenImage();
         }
         
         function handleValidClick(event) {
@@ -671,20 +727,38 @@
             }
         }
         
-        // NUEVA FUNCIÓN: Registrar click localmente (instantáneo)
-        function registerLocalClick() {
-            userClicks++; // Incrementar inmediatamente para feedback visual
-            pendingClicks++; // Llevar cuenta de clicks pendientes de enviar
-            updateMinimizedLeaderboard(currentLeaderboard); // Actualizar UI inmediatamente
+        // NUEVA FUNCIÓN: Animación del contador
+        function animateClickCounter() {
+            const userStats = document.querySelector('.user-stats');
+            const userClicksElement = document.querySelector('.user-clicks');
+            
+            if (userStats && userClicksElement) {
+                // Animación de bounce en el contador
+                userClicksElement.classList.remove('click-bounce');
+                void userClicksElement.offsetWidth; // Trigger reflow
+                userClicksElement.classList.add('click-bounce');
+                
+                // Efecto de sacudida suave en todo el contenedor
+                userStats.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    userStats.style.transform = 'scale(1)';
+                }, 150);
+            }
         }
         
-        // NUEVA FUNCIÓN: Procesar clicks pendientes en lote
+        function registerLocalClick() {
+            userClicks++;
+            pendingClicks++;
+            updateMinimizedLeaderboard(currentLeaderboard);
+            animateClickCounter(); // Llamar la animación
+        }
+        
         async function processPendingClicks() {
             if (pendingClicks === 0 || isProcessing) return;
             
             isProcessing = true;
             const clicksToSend = pendingClicks;
-            pendingClicks = 0; // Resetear contador
+            pendingClicks = 0;
             
             try {
                 const response = await fetch(`${API_BASE_URL}/api/click`, {
@@ -696,23 +770,20 @@
                         userId: userId,
                         countryCode: userCountryCode,
                         countryName: userCountry,
-                        clickCount: clicksToSend // Enviar múltiples clicks de una vez
+                        clickCount: clicksToSend
                     })
                 });
                 
                 if (response.ok) {
                     const data = await response.json();
-                    // Actualizar con datos reales del servidor
                     userClicks = data.userClicks;
                     totalClicks = data.totalClicks;
                     console.log(`✅ Sent ${clicksToSend} clicks to server`);
                 } else {
-                    // Si falla, volver a agregar los clicks pendientes
                     pendingClicks += clicksToSend;
                 }
             } catch (error) {
                 console.log('Click registration error:', error);
-                // Si hay error, volver a agregar los clicks pendientes
                 pendingClicks += clicksToSend;
             }
             
@@ -744,7 +815,7 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/api/user/${userId}`);
                 const data = await response.json();
-                userClicks = data.userClicks; // Sincronizar con servidor al inicio
+                userClicks = data.userClicks;
                 updateMinimizedLeaderboard(currentLeaderboard);
             } catch (error) {
                 console.log('Loading user data:', error);
@@ -923,12 +994,18 @@
             }, 800);
         }
         
-        // Prevent zoom on double-tap
+        // Prevenir acciones no deseadas
         document.addEventListener('touchstart', function(e) {
             if (e.touches.length > 1) {
                 e.preventDefault();
             }
         }, { passive: false });
+        
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target === catImage || e.target === catContainer) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
