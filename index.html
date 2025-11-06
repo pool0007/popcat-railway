@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PopCat Click - Multiusuario</title>
+    <title>PopCat Click - Global Challenge</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
             background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
             color: white;
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
             overflow-x: hidden;
         }
         
@@ -24,94 +25,108 @@
             max-width: 1200px;
             margin: 0 auto;
             text-align: center;
+            padding: 10px;
         }
         
         header {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            padding: 0 10px;
         }
         
         h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            margin-bottom: 8px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            line-height: 1.2;
         }
         
         .subtitle {
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 4vw, 1.3rem);
             opacity: 0.9;
+            line-height: 1.4;
         }
         
         .stats-container {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 0 5px;
         }
         
         .stat-box {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            min-width: 200px;
+            border-radius: 12px;
+            padding: 15px 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         
         .stat-title {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            margin-bottom: 8px;
             opacity: 0.9;
         }
         
         .stat-value {
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 6vw, 2.2rem);
             font-weight: bold;
+            line-height: 1.2;
         }
         
         .cat-container {
-            margin: 30px auto;
-            width: 300px;
-            height: 300px;
+            margin: 20px auto;
+            width: min(80vw, 350px);
+            height: min(80vw, 350px);
             cursor: pointer;
             transition: transform 0.05s;
-            font-size: 200px;
+            font-size: min(40vw, 180px);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             user-select: none;
+            touch-action: manipulation;
         }
         
         .cat-container:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
         }
         
         .cat.open {
             filter: brightness(1);
-            transition: filter 0.1s;
+            transition: filter 0.08s;
         }
         
         .cat.closed {
             filter: brightness(0.7);
         }
         
-        /* Animación del +1 */
+        /* Animación del +1 mejorada para móviles */
         .click-popup {
             position: absolute;
-            font-size: 2rem;
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
             font-weight: bold;
             color: #ffeb3b;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
             pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
+            animation: floatUp 0.8s ease-out forwards;
             z-index: 100;
+            user-select: none;
         }
         
         @keyframes floatUp {
             0% {
                 opacity: 1;
                 transform: translateY(0) scale(1);
+            }
+            70% {
+                opacity: 0.8;
+                transform: translateY(-60px) scale(1.3);
             }
             100% {
                 opacity: 0;
@@ -123,70 +138,44 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 15px;
-            padding: 20px;
-            margin-top: 30px;
+            padding: 20px 15px;
+            margin-top: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
         
         .leaderboard h2 {
-            margin-bottom: 20px;
-            font-size: 2rem;
+            margin-bottom: 15px;
+            font-size: clamp(1.5rem, 5vw, 2rem);
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: clamp(0.8rem, 3vw, 1rem);
         }
         
         th, td {
-            padding: 12px 15px;
+            padding: 10px 8px;
             text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         th {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.15);
             font-weight: bold;
+            font-size: clamp(0.7rem, 3vw, 0.9rem);
         }
         
         tr:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.08);
         }
         
         .country-flag {
-            width: 30px;
-            height: 20px;
-            margin-right: 10px;
+            width: 25px;
+            height: 16px;
+            margin-right: 8px;
             vertical-align: middle;
-        }
-        
-        .click-button {
-            background: linear-gradient(135deg, #ff8a00, #e52e71);
-            border: none;
-            border-radius: 50px;
-            color: white;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s;
-        }
-        
-        .click-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-        }
-        
-        .click-button:active {
-            transform: translateY(1px);
-        }
-        
-        .click-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+            border-radius: 2px;
         }
         
         .loading {
@@ -197,38 +186,90 @@
         #loading-message {
             padding: 20px;
             font-style: italic;
+            font-size: clamp(0.9rem, 4vw, 1.1rem);
         }
         
         .success-badge {
             background: rgba(0, 255, 0, 0.2);
-            padding: 10px;
-            border-radius: 10px;
+            padding: 12px 15px;
+            border-radius: 12px;
             margin-bottom: 20px;
             border: 1px solid rgba(0, 255, 0, 0.5);
+            font-size: clamp(0.9rem, 4vw, 1.1rem);
         }
         
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
+        /* Mejoras específicas para móviles */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 5px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+                gap: 12px;
             }
             
             .stat-box {
-                min-width: 150px;
-                padding: 15px;
-            }
-            
-            .stat-value {
-                font-size: 1.8rem;
+                padding: 12px 8px;
+                min-height: 80px;
             }
             
             .cat-container {
-                width: 250px;
-                height: 250px;
-                font-size: 150px;
+                margin: 15px auto;
             }
             
-            table {
-                font-size: 0.9rem;
+            .leaderboard {
+                padding: 15px 10px;
+                margin-top: 20px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .stat-box {
+                padding: 10px 6px;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+                font-size: 0.75rem;
+            }
+            
+            .country-flag {
+                width: 20px;
+                height: 14px;
+            }
+        }
+        
+        /* Soporte para orientación landscape en móviles */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .container {
+                padding: 5px;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+            
+            .stat-box {
+                padding: 8px 6px;
+                min-height: 70px;
+            }
+            
+            .cat-container {
+                width: min(40vh, 250px);
+                height: min(40vh, 250px);
+                font-size: min(30vh, 120px);
+                margin: 10px auto;
             }
         }
     </style>
@@ -236,91 +277,89 @@
 <body>
     <div class="container">
         <div class="success-badge">
-            ✅ PopCat Click - ¡Optimizado y con Animaciones!
+            ✅ PopCat Click - Global Challenge Live!
         </div>
         
         <header>
             <h1>PopCat Click</h1>
-            <p class="subtitle">¡Haz clic en el gato para sumar puntos a tu país!</p>
+            <p class="subtitle">Click the cat to add points to your country! 🎯</p>
         </header>
         
         <div class="stats-container">
             <div class="stat-box">
-                <div class="stat-title">Tus Clicks</div>
+                <div class="stat-title">Your Clicks</div>
                 <div class="stat-value" id="user-clicks">0</div>
             </div>
             
             <div class="stat-box">
-                <div class="stat-title">Clicks Totales</div>
+                <div class="stat-title">Total Clicks</div>
                 <div class="stat-value" id="total-clicks">0</div>
             </div>
             
             <div class="stat-box">
-                <div class="stat-title">Tu País</div>
-                <div class="stat-value" id="user-country">Cargando...</div>
+                <div class="stat-title">Your Country</div>
+                <div class="stat-value" id="user-country">Loading...</div>
             </div>
         </div>
         
         <div class="cat-container" id="cat-container">
             <div class="cat open" id="cat">😺</div>
-            <!-- Aquí aparecerán los +1 -->
+            <!-- +1 popups will appear here -->
         </div>
         
-        <button class="click-button" id="auto-clicker">Activar Auto-Clicker (10 seg)</button>
-        
         <div class="leaderboard">
-            <h2>Leaderboard por País</h2>
-            <div id="loading-message">Cargando leaderboard...</div>
+            <h2>Country Leaderboard</h2>
+            <div id="loading-message">Loading leaderboard...</div>
             <table>
                 <thead>
                     <tr>
-                        <th>Posición</th>
-                        <th>País</th>
+                        <th>Rank</th>
+                        <th>Country</th>
                         <th>Clicks</th>
                     </tr>
                 </thead>
                 <tbody id="leaderboard-body">
-                    <!-- Los datos del leaderboard se cargarán aquí -->
+                    <!-- Leaderboard data will load here -->
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // La URL se determina automáticamente
+        // Auto-detect API URL
         const API_BASE_URL = window.location.origin;
         
-        // Variables globales
+        // Global variables
         let userClicks = 0;
         let totalClicks = 0;
-        let userCountry = "Desconocido";
+        let userCountry = "Unknown";
         let userCountryCode = "unknown";
         let userId = generateUserId();
-        let autoClickerActive = false;
-        let clickQueue = []; // Cola para manejar múltiples clicks rápidos
+        let clickQueue = [];
+        let isProcessing = false;
         
-        // Elementos DOM
+        // DOM elements
         const userClicksElement = document.getElementById('user-clicks');
         const totalClicksElement = document.getElementById('total-clicks');
         const userCountryElement = document.getElementById('user-country');
         const catContainer = document.getElementById('cat-container');
         const catElement = document.getElementById('cat');
         const leaderboardBody = document.getElementById('leaderboard-body');
-        const autoClickerButton = document.getElementById('auto-clicker');
         const loadingMessage = document.getElementById('loading-message');
         
-        // Inicialización
+        // Initialize app
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Iniciando aplicación OPTIMIZADA...');
+            console.log('🚀 Starting optimized PopCat Click...');
             
             await detectCountry();
             await loadUserData();
             await loadLeaderboard();
             
+            // Event listeners
             catContainer.addEventListener('click', handleCatClick);
-            autoClickerButton.addEventListener('click', activateAutoClicker);
+            catContainer.addEventListener('touchstart', handleCatClick, { passive: true });
             
-            // Actualizar leaderboard cada 3 segundos (más frecuente)
+            // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
         });
         
@@ -341,8 +380,8 @@
                 userCountryCode = data.country.toLowerCase();
                 userCountryElement.textContent = userCountry;
             } catch (error) {
-                userCountry = navigator.language.split('-')[1] || 'Desconocido';
-                userCountryCode = navigator.language.split('-')[1]?.toLowerCase() || 'unknown';
+                userCountry = "Unknown";
+                userCountryCode = "unknown";
                 userCountryElement.textContent = userCountry;
             }
         }
@@ -354,7 +393,7 @@
                 userClicks = data.userClicks;
                 userClicksElement.textContent = userClicks.toLocaleString();
             } catch (error) {
-                console.error('Error cargando datos del usuario:', error);
+                console.log('Loading user data:', error);
             }
         }
         
@@ -369,21 +408,28 @@
                 updateLeaderboardUI(data.leaderboard);
                 loadingMessage.style.display = 'none';
             } catch (error) {
-                console.error('Error cargando leaderboard:', error);
+                console.log('Loading leaderboard:', error);
             }
         }
         
-        async function handleCatClick(event) {
-            // Animación inmediata (no bloqueante)
+        function handleCatClick(event) {
+            // Prevent multiple rapid clicks on mobile
+            if (event.type === 'touchstart') {
+                event.preventDefault();
+            }
+            
+            // Immediate visual feedback
             animateCatClick(event);
             
-            // Procesar click en cola para no bloquear la UI
+            // Add to queue and process
             clickQueue.push(true);
-            processClickQueue();
+            if (!isProcessing) {
+                processClickQueue();
+            }
         }
         
         function animateCatClick(event) {
-            // Animación del gato más rápida
+            // Fast cat animation
             catElement.classList.remove('open');
             catElement.classList.add('closed');
             
@@ -392,7 +438,7 @@
                 catElement.classList.add('open');
             }, 50);
             
-            // Crear animación +1
+            // Create +1 popup
             createClickPopup(event);
         }
         
@@ -401,27 +447,39 @@
             popup.className = 'click-popup';
             popup.textContent = '+1';
             
-            // Posicionar cerca del cursor
+            // Position near click/touch
             const rect = catContainer.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            let x, y;
+            
+            if (event.type === 'touchstart') {
+                x = event.touches[0].clientX - rect.left;
+                y = event.touches[0].clientY - rect.top;
+            } else {
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top;
+            }
+            
+            // Ensure popup stays within cat container
+            x = Math.max(20, Math.min(rect.width - 20, x));
+            y = Math.max(20, Math.min(rect.height - 20, y));
             
             popup.style.left = x + 'px';
             popup.style.top = y + 'px';
             
             catContainer.appendChild(popup);
             
-            // Eliminar después de la animación
+            // Remove after animation
             setTimeout(() => {
-                popup.remove();
-            }, 1000);
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 800);
         }
         
         async function processClickQueue() {
-            if (clickQueue.length === 0) return;
+            if (clickQueue.length === 0 || isProcessing) return;
             
-            // Tomar un click de la cola
-            clickQueue.shift();
+            isProcessing = true;
             
             try {
                 const response = await fetch(`${API_BASE_URL}/api/click`, {
@@ -444,41 +502,52 @@
                     totalClicksElement.textContent = totalClicks.toLocaleString();
                 }
             } catch (error) {
-                console.error('Error registrando click:', error);
-                // Fallback local inmediato
+                console.log('Click registration:', error);
+                // Local fallback
                 userClicks++;
                 totalClicks++;
                 userClicksElement.textContent = userClicks.toLocaleString();
                 totalClicksElement.textContent = totalClicks.toLocaleString();
             }
             
-            // Procesar siguiente click en la cola
+            // Remove processed click
+            clickQueue.shift();
+            isProcessing = false;
+            
+            // Process next in queue
             if (clickQueue.length > 0) {
-                setTimeout(processClickQueue, 50);
+                setTimeout(processClickQueue, 30);
             }
         }
         
         function updateLeaderboardUI(leaderboardData) {
-            if (!leaderboardData || leaderboardData.length === 0) return;
+            if (!leaderboardData || leaderboardData.length === 0) {
+                leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No data yet</td></tr>';
+                return;
+            }
             
             leaderboardBody.innerHTML = '';
             
             leaderboardData.forEach((item, index) => {
                 const row = document.createElement('tr');
                 
+                // Rank
                 const positionCell = document.createElement('td');
                 positionCell.textContent = index + 1;
                 row.appendChild(positionCell);
                 
+                // Country with flag
                 const countryCell = document.createElement('td');
                 const flagImg = document.createElement('img');
                 flagImg.src = `https://flagcdn.com/w40/${item.countryCode}.png`;
                 flagImg.alt = `${item.countryName} flag`;
                 flagImg.className = 'country-flag';
+                flagImg.loading = 'lazy';
                 countryCell.appendChild(flagImg);
                 countryCell.appendChild(document.createTextNode(item.countryName));
                 row.appendChild(countryCell);
                 
+                // Clicks
                 const clicksCell = document.createElement('td');
                 clicksCell.textContent = item.totalClicks.toLocaleString();
                 row.appendChild(clicksCell);
@@ -487,49 +556,21 @@
             });
         }
         
-        function activateAutoClicker() {
-            if (autoClickerActive) return;
-            
-            autoClickerActive = true;
-            autoClickerButton.disabled = true;
-            autoClickerButton.textContent = 'Auto-Clicker Activado';
-            
-            let secondsLeft = 10;
-            let clickCount = 0;
-            const maxClicks = 50; // Máximo de clicks en auto-clicker
-            
-            const autoClickInterval = setInterval(() => {
-                if (clickCount >= maxClicks) {
-                    clearInterval(autoClickInterval);
-                    return;
-                }
-                
-                // Simular click automático
-                const fakeEvent = {
-                    clientX: catContainer.offsetLeft + catContainer.offsetWidth / 2,
-                    clientY: catContainer.offsetTop + catContainer.offsetHeight / 2
-                };
-                
-                animateCatClick(fakeEvent);
-                clickQueue.push(true);
-                clickCount++;
-                
-                // Procesar cola más rápido en auto-clicker
-                if (clickQueue.length === 1) {
-                    processClickQueue();
-                }
-                
-                secondsLeft--;
-                autoClickerButton.textContent = `Auto-Clicker: ${secondsLeft}s`;
-                
-                if (secondsLeft <= 0) {
-                    clearInterval(autoClickInterval);
-                    autoClickerActive = false;
-                    autoClickerButton.disabled = false;
-                    autoClickerButton.textContent = 'Activar Auto-Clicker (10 seg)';
-                }
-            }, 100); // 10 clicks por segundo
-        }
+        // Prevent zoom on double-tap (iOS)
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
     </script>
 </body>
 </html>
