@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pop-Dak - Global Challenge</title>
     <style>
-        /* Tus estilos CSS existentes se mantienen igual */
         * {
             margin: 0;
             padding: 0;
@@ -15,7 +14,7 @@
         }
         
         body {
-            background: url('backback.png'); /* Imagen local en directorio raíz */
+            background: url('backback.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -52,7 +51,7 @@
         }
         
         h1 {
-            font-size: clamp(2.5rem, 10vw, 4.5rem); /* Más grande */
+            font-size: clamp(2.5rem, 10vw, 4.5rem);
             margin-bottom: 8px;
             text-shadow: 
                 3px 3px 0 #000,
@@ -60,16 +59,10 @@
                 1px -1px 0 #000,
                 -1px 1px 0 #000,
                 1px 1px 0 #000,
-                0 0 10px rgba(0, 0, 0, 0.8); /* Borde negro más pronunciado */
+                0 0 10px rgba(0, 0, 0, 0.8);
             line-height: 1.1;
             font-weight: 800;
             letter-spacing: 1px;
-        }
-        
-        .subtitle {
-            font-size: clamp(1rem, 4vw, 1.3rem);
-            opacity: 0.9;
-            line-height: 1.4;
         }
         
         .cat-container {
@@ -77,7 +70,6 @@
             width: min(90vw, 500px);
             height: min(90vw, 500px);
             cursor: pointer;
-            transition: transform 0.05s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -89,29 +81,21 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        .cat-container:active {
-            transform: scale(0.95);
-        }
-        
         .cat-image {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: all 0.08s ease;
+            transition: transform 0.05s ease-out;
             border-radius: 20px;
             -webkit-user-select: none;
             -webkit-user-drag: none;
             user-select: none;
-        }
-        
-        .cat-image.open {
-            filter: brightness(1);
             transform: scale(1);
         }
         
-        .cat-image.closed {
-            filter: brightness(0.85);
-            transform: scale(0.92);
+        .cat-image.pressed {
+            transform: scale(0.95);
+            filter: brightness(0.9);
         }
         
         .preload {
@@ -147,7 +131,6 @@
             }
         }
         
-        /* Animación para el contador de clicks */
         @keyframes clickBounce {
             0% {
                 transform: scale(1);
@@ -377,11 +360,6 @@
             border-left: 3px solid #ffeb3b;
         }
         
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        
         @media (max-width: 768px) {
             .leaderboard-top {
                 flex-direction: column;
@@ -399,7 +377,11 @@
             }
             
             h1 {
-                font-size: clamp(2.2rem, 12vw, 4rem); /* Ajuste para móviles */
+                font-size: clamp(2.2rem, 12vw, 4rem);
+            }
+            
+            .cat-image {
+                transition: transform 0.03s ease-out; /* Más rápido en móviles */
             }
         }
         
@@ -428,7 +410,7 @@
             }
             
             h1 {
-                font-size: clamp(2rem, 14vw, 3.5rem); /* Ajuste para móviles pequeños */
+                font-size: clamp(2rem, 14vw, 3.5rem);
             }
         }
         
@@ -449,16 +431,6 @@
                 font-size: 1rem;
             }
         }
-        
-        @media (min-height: 800px) {
-            .main-content {
-                justify-content: center;
-            }
-            
-            .leaderboard-section {
-                margin-top: 40px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -474,7 +446,7 @@
             </header>
             
             <div class="cat-container" id="cat-container">
-                <img src="image1.png" alt="Pop-Dak" class="cat-image open" id="cat-image">
+                <img src="image1.png" alt="Pop-Dak" class="cat-image" id="cat-image">
             </div>
         </div>
         
@@ -510,24 +482,20 @@
         
         // Global variables
         let userClicks = 0;
-        let pendingClicks = 0;
         let totalClicks = 0;
         let userCountry = "Unknown";
         let userCountryCode = "unknown";
         let userId = generateUserId();
-        let clickQueue = [];
         let isProcessing = false;
         let isLeaderboardExpanded = false;
         let currentLeaderboard = [];
-        let isMouseDown = false;
-        let clickStartTime = 0;
         let lastClickTime = 0;
-        let clickCooldown = 100; // ms entre clicks
+        let clickCooldown = 50; // ms entre clicks (más rápido)
         
         // Sistema de audio mejorado para móviles
         let audioPool = [];
         let currentAudioIndex = 0;
-        const AUDIO_POOL_SIZE = 5;
+        const AUDIO_POOL_SIZE = 8; // Más instancias para clicks rápidos
         
         // DOM elements
         const catContainer = document.getElementById('cat-container');
@@ -547,7 +515,7 @@
             for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
                 const audio = new Audio('sound.mp3');
                 audio.preload = 'auto';
-                audio.volume = 0.7;
+                audio.volume = 0.6; // Un poco más bajo para múltiples clicks
                 audioPool.push(audio);
             }
             console.log(`🎵 Audio pool initialized with ${AUDIO_POOL_SIZE} instances`);
@@ -558,19 +526,17 @@
             try {
                 const audio = audioPool[currentAudioIndex];
                 audio.currentTime = 0;
-                audio.volume = 0.7;
                 
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.log('Audio play failed:', error);
                         audio.volume = 0;
                     });
                 }
                 
                 currentAudioIndex = (currentAudioIndex + 1) % AUDIO_POOL_SIZE;
             } catch (error) {
-                console.log('Sound error:', error);
+                // Silenciar errores de audio
             }
         }
         
@@ -580,13 +546,6 @@
             const closedImg = new Image();
             openImg.src = IMAGE_OPEN;
             closedImg.src = IMAGE_CLOSED;
-            
-            openImg.onload = function() {
-                console.log('Open image loaded');
-            };
-            closedImg.onload = function() {
-                console.log('Closed image loaded');
-            };
         }
         
         // Initialize app
@@ -603,7 +562,7 @@
             await loadUserData();
             await loadLeaderboard();
             
-            // Event listeners optimizados
+            // Event listeners optimizados para máxima fluidez
             setupClickEvents();
             
             // Leaderboard toggle
@@ -611,9 +570,6 @@
             
             // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
-            
-            // Procesar clicks pendientes cada segundo
-            setInterval(processPendingClicks, 1000);
             
             // Activar audio con primer touch
             activateAudioOnFirstTouch();
@@ -627,14 +583,12 @@
                     silentAudio.volume = 0.001;
                     silentAudio.play().then(() => {
                         console.log('🎵 Audio activated on first touch');
-                    }).catch(e => {
-                        console.log('Audio activation failed:', e);
                     });
                     
                     document.removeEventListener('touchstart', activateAudio);
                     document.removeEventListener('mousedown', activateAudio);
                 } catch (error) {
-                    console.log('Audio activation error:', error);
+                    // Silenciar errores de activación
                 }
             };
             
@@ -643,43 +597,30 @@
         }
         
         function setupClickEvents() {
-            // Para desktop - mousedown/mouseup para imagen sostenida
-            catContainer.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                handleInteractionStart(e);
-            });
+            // Sistema unificado para desktop y móvil
+            const handleClick = function(event) {
+                event.preventDefault();
+                
+                const now = Date.now();
+                if (now - lastClickTime < clickCooldown) return;
+                lastClickTime = now;
+                
+                // Feedback visual inmediato
+                animateClick();
+                createClickPopup(event);
+                playClickSound();
+                
+                // Registrar click
+                registerClick();
+            };
             
-            catContainer.addEventListener('mouseup', function(e) {
-                if (isMouseDown) {
-                    handleInteractionEnd(e);
-                }
-            });
+            // Para máxima fluidez en móviles, usar solo touchstart
+            catContainer.addEventListener('touchstart', handleClick, { passive: false });
             
-            catContainer.addEventListener('mouseleave', function(e) {
-                if (isMouseDown) {
-                    handleInteractionCancel();
-                }
-            });
+            // Para desktop, usar click para mejor compatibilidad
+            catContainer.addEventListener('click', handleClick);
             
-            // Para móviles - touchstart/touchend optimizados
-            catContainer.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                handleInteractionStart(e);
-            }, { passive: false });
-            
-            catContainer.addEventListener('touchend', function(e) {
-                if (isMouseDown) {
-                    handleInteractionEnd(e);
-                }
-            });
-            
-            catContainer.addEventListener('touchcancel', function(e) {
-                if (isMouseDown) {
-                    handleInteractionCancel();
-                }
-            });
-            
-            // Prevenir acciones no deseadas en móviles
+            // Prevenir acciones no deseadas
             catContainer.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 return false;
@@ -691,92 +632,32 @@
             });
         }
         
-        // FUNCIONES PARA MANEJAR INTERACCIONES
-        function handleInteractionStart(event) {
-            const now = Date.now();
-            if (now - lastClickTime < clickCooldown) return;
+        // Animación de click optimizada
+        function animateClick() {
+            // Aplicar estilo presionado inmediatamente
+            catImage.classList.add('pressed');
             
-            isMouseDown = true;
-            clickStartTime = now;
-            changeToClosedImage();
-            
-            // Reproducir sonido inmediatamente en móviles
-            if ('ontouchstart' in window) {
-                playClickSound();
-            }
+            // Remover después de un tiempo muy corto
+            setTimeout(() => {
+                catImage.classList.remove('pressed');
+            }, 50);
         }
         
-        function handleInteractionEnd(event) {
-            const now = Date.now();
-            const clickDuration = now - clickStartTime;
-            isMouseDown = false;
-            
-            // Cooldown para evitar clicks múltiples rápidos
-            if (now - lastClickTime < clickCooldown) {
-                changeToOpenImage();
-                return;
-            }
-            
-            lastClickTime = now;
-            
-            if (clickDuration < 500) {
-                handleValidClick(event);
-            } else {
-                // Si fue un touch largo, solo crear el popup
-                createClickPopup(event);
-                registerLocalClick();
-            }
-            
-            changeToOpenImage();
-        }
-        
-        function handleInteractionCancel() {
-            isMouseDown = false;
-            changeToOpenImage();
-        }
-        
-        function handleValidClick(event) {
-            createClickPopup(event);
-            registerLocalClick();
-            
-            // Para desktop, reproducir sonido aquí
-            if (!('ontouchstart' in window)) {
-                playClickSound();
-            }
-        }
-        
-        // Animación del contador
-        function animateClickCounter() {
-            const userStats = document.querySelector('.user-stats');
-            const userClicksElement = document.querySelector('.user-clicks');
-            
-            if (userStats && userClicksElement) {
-                // Animación de bounce en el contador
-                userClicksElement.classList.remove('click-bounce');
-                void userClicksElement.offsetWidth;
-                userClicksElement.classList.add('click-bounce');
-                
-                // Efecto de sacudida suave en todo el contenedor
-                userStats.style.transform = 'scale(1.05)';
-                setTimeout(() => {
-                    userStats.style.transform = 'scale(1)';
-                }, 150);
-            }
-        }
-        
-        function registerLocalClick() {
+        // Registrar click (instantáneo)
+        function registerClick() {
             userClicks++;
-            pendingClicks++;
             updateMinimizedLeaderboard(currentLeaderboard);
             animateClickCounter();
+            
+            // Enviar click al servidor (sin esperar respuesta para no bloquear)
+            sendClickToServer();
         }
         
-        async function processPendingClicks() {
-            if (pendingClicks === 0 || isProcessing) return;
+        // Enviar click al servidor (no bloqueante)
+        async function sendClickToServer() {
+            if (isProcessing) return;
             
             isProcessing = true;
-            const clicksToSend = pendingClicks;
-            pendingClicks = 0;
             
             try {
                 const response = await fetch(`${API_BASE_URL}/api/click`, {
@@ -787,25 +668,33 @@
                     body: JSON.stringify({
                         userId: userId,
                         countryCode: userCountryCode,
-                        countryName: userCountry,
-                        clickCount: clicksToSend
+                        countryName: userCountry
                     })
                 });
                 
                 if (response.ok) {
                     const data = await response.json();
+                    // Sincronizar con datos del servidor
                     userClicks = data.userClicks;
                     totalClicks = data.totalClicks;
-                    console.log(`✅ Sent ${clicksToSend} clicks to server`);
-                } else {
-                    pendingClicks += clicksToSend;
+                    updateMinimizedLeaderboard(currentLeaderboard);
                 }
             } catch (error) {
-                console.log('Click registration error:', error);
-                pendingClicks += clicksToSend;
+                // Silenciar errores, el usuario sigue viendo sus clicks locales
             }
             
             isProcessing = false;
+        }
+        
+        // Animación del contador
+        function animateClickCounter() {
+            const userClicksElement = document.querySelector('.user-clicks');
+            
+            if (userClicksElement) {
+                userClicksElement.classList.remove('click-bounce');
+                void userClicksElement.offsetWidth;
+                userClicksElement.classList.add('click-bounce');
+            }
         }
         
         function generateUserId() {
@@ -857,18 +746,6 @@
             }
         }
         
-        function changeToClosedImage() {
-            catImage.src = IMAGE_CLOSED;
-            catImage.classList.remove('open');
-            catImage.classList.add('closed');
-        }
-        
-        function changeToOpenImage() {
-            catImage.src = IMAGE_OPEN;
-            catImage.classList.remove('closed');
-            catImage.classList.add('open');
-        }
-        
         function updateMinimizedLeaderboard(leaderboardData) {
             if (!leaderboardData || leaderboardData.length === 0) {
                 leaderboardTop.innerHTML = '<span>No data yet</span>';
@@ -892,7 +769,6 @@
                          alt="${userCountry}" 
                          class="user-flag">
                     <span class="user-clicks">${userClicks.toLocaleString()}</span>
-                    ${pendingClicks > 0 ? `<span style="font-size: 0.8rem; opacity: 0.7;">(+${pendingClicks})</span>` : ''}
                 </div>
             `;
         }
