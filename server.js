@@ -8,6 +8,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// SERVIR archivos estáticos desde public/
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Base de datos SQLite
@@ -85,6 +87,79 @@ app.post('/api/click', (req, res) => {
                         
                         db.get(`SELECT SUM(totalClicks) as total FROM countries`, (err, total) => {
                             if (err) {
+                                console.error('Error total:', err);
+                                return res.status(500).json({ error: err.message });
+                            }
+                            
+                            db.get(`SELECT totalClicks FROM users WHERE userId = ?`, [userId], (err, user) => {
+                                if (err) {
+                                    console.error('Error user clicks:', err);
+                                    return res.status(500).json({ error: err.message });
+                                }
+
+                                const response = {
+                                    userClicks: user?.totalClicks || 0,
+                                    totalClicks: total?.total || 0,
+                                    leaderboard: leaderboard || []
+                                };
+
+                                console.log('Respuesta:', response);
+                                res.json(response);
+                            });
+                        });
+                    });
+                });
+        });
+});
+
+app.get('/api/leaderboard', (req, res) => {
+    db.all(`SELECT countryCode, countryName, totalClicks 
+           FROM countries 
+           ORDER BY totalClicks DESC 
+           LIMIT 10`, (err, leaderboard) => {
+        if (err) {
+            console.error('Error leaderboard:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        
+        db.get(`SELECT SUM(totalClicks) as total FROM countries`, (err, total) => {
+            if (err) {
+                console.error('Error total:', err);
+                return res.status(500).json({ error: err.message });
+            }
+
+            res.json({
+                leaderboard: leaderboard || [],
+                totalClicks: total?.total || 0
+            });
+        });
+    });
+});
+
+app.get('/api/user/:userId', (req, res) => {
+    db.get(`SELECT totalClicks FROM users WHERE userId = ?`, [req.params.userId], (err, user) => {
+        if (err) {
+            console.error('Error user:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ userClicks: user?.totalClicks || 0 });
+    });
+});
+
+// Ruta principal - servir index.html desde public
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Para cualquier otra ruta, también servir index.html (importante para SPA)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 PopCat Click ejecutándose en puerto ${PORT}`);
+    console.log(`📊 Base de datos inicializada con datos de ejemplo`);
+});                            if (err) {
                                 console.error('Error total:', err);
                                 return res.status(500).json({ error: err.message });
                             }
