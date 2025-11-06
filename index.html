@@ -479,6 +479,7 @@
         let isLeaderboardExpanded = false;
         let currentLeaderboard = [];
         let isMouseDown = false;
+        let clickStartTime = 0;
         
         // DOM elements
         const catContainer = document.getElementById('cat-container');
@@ -502,19 +503,8 @@
             await loadUserData();
             await loadLeaderboard();
             
-            // Event listeners para clicks normales
-            catContainer.addEventListener('click', handleSingleClick);
-            catContainer.addEventListener('touchstart', handleSingleClick, { passive: true });
-            
-            // Event listeners para click sostenido (solo para cambiar imagen)
-            catContainer.addEventListener('mousedown', startContinuousClick);
-            catContainer.addEventListener('mouseup', stopContinuousClick);
-            catContainer.addEventListener('mouseleave', stopContinuousClick);
-            
-            // Para móviles
-            catContainer.addEventListener('touchstart', startContinuousClickMobile, { passive: true });
-            catContainer.addEventListener('touchend', stopContinuousClick);
-            catContainer.addEventListener('touchcancel', stopContinuousClick);
+            // Event listeners simples
+            setupClickEvents();
             
             // Leaderboard toggle
             leaderboardMinimized.addEventListener('click', toggleLeaderboard);
@@ -522,6 +512,74 @@
             // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
         });
+        
+        function setupClickEvents() {
+            // Para desktop - mousedown/mouseup para imagen sostenida
+            catContainer.addEventListener('mousedown', function(e) {
+                isMouseDown = true;
+                clickStartTime = Date.now();
+                changeToClosedImage();
+            });
+            
+            catContainer.addEventListener('mouseup', function(e) {
+                if (isMouseDown) {
+                    const clickDuration = Date.now() - clickStartTime;
+                    isMouseDown = false;
+                    
+                    // Si fue un click rápido (menos de 200ms), contar como click
+                    if (clickDuration < 200) {
+                        handleValidClick(e);
+                    }
+                    
+                    changeToOpenImage();
+                }
+            });
+            
+            catContainer.addEventListener('mouseleave', function(e) {
+                if (isMouseDown) {
+                    isMouseDown = false;
+                    changeToOpenImage();
+                }
+            });
+            
+            // Para móviles - touchstart/touchend
+            catContainer.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                isMouseDown = true;
+                clickStartTime = Date.now();
+                changeToClosedImage();
+            }, { passive: false });
+            
+            catContainer.addEventListener('touchend', function(e) {
+                if (isMouseDown) {
+                    const clickDuration = Date.now() - clickStartTime;
+                    isMouseDown = false;
+                    
+                    // Si fue un touch rápido (menos de 200ms), contar como click
+                    if (clickDuration < 200) {
+                        handleValidClick(e);
+                    }
+                    
+                    changeToOpenImage();
+                }
+            });
+            
+            catContainer.addEventListener('touchcancel', function(e) {
+                if (isMouseDown) {
+                    isMouseDown = false;
+                    changeToOpenImage();
+                }
+            });
+        }
+        
+        function handleValidClick(event) {
+            createClickPopup(event);
+            playClickSound();
+            clickQueue.push(true);
+            if (!isProcessing) {
+                processClickQueue();
+            }
+        }
         
         function generateUserId() {
             let id = localStorage.getItem('popdak_userId');
@@ -549,6 +607,7 @@
                 const response = await fetch(`${API_BASE_URL}/api/user/${userId}`);
                 const data = await response.json();
                 userClicks = data.userClicks;
+                updateMinimizedLeaderboard(currentLeaderboard);
             } catch (error) {
                 console.log('Loading user data:', error);
             }
@@ -569,6 +628,18 @@
             } catch (error) {
                 console.log('Loading leaderboard:', error);
             }
+        }
+        
+        function changeToClosedImage() {
+            catImage.src = IMAGE_CLOSED;
+            catImage.classList.remove('open');
+            catImage.classList.add('closed');
+        }
+        
+        function changeToOpenImage() {
+            catImage.src = IMAGE_OPEN;
+            catImage.classList.remove('closed');
+            catImage.classList.add('open');
         }
         
         function updateMinimizedLeaderboard(leaderboardData) {
@@ -687,64 +758,6 @@
             }
         }
         
-        // Click único - SUMA CLICKS Y MUESTRA +1
-        function handleSingleClick(event) {
-            if (event.type === 'touchstart') {
-                event.preventDefault();
-            }
-            
-            // Solo procesar si NO es un click sostenido
-            if (!isMouseDown) {
-                animateCatClick(event);
-                playClickSound();
-                clickQueue.push(true);
-                if (!isProcessing) {
-                    processClickQueue();
-                }
-            }
-        }
-        
-        // Click sostenido - SOLO cambia la imagen
-        function startContinuousClick() {
-            isMouseDown = true;
-            // Cambiar a imagen cerrada inmediatamente
-            catImage.src = IMAGE_CLOSED;
-            catImage.classList.remove('open');
-            catImage.classList.add('closed');
-        }
-        
-        function stopContinuousClick() {
-            isMouseDown = false;
-            // Volver a imagen abierta
-            catImage.src = IMAGE_OPEN;
-            catImage.classList.remove('closed');
-            catImage.classList.add('open');
-        }
-        
-        // Click sostenido - Móvil
-        function startContinuousClickMobile(event) {
-            event.preventDefault();
-            startContinuousClick();
-        }
-        
-        function animateCatClick(event) {
-            // Cambiar brevemente a imagen cerrada y crear +1
-            catImage.src = IMAGE_CLOSED;
-            catImage.classList.remove('open');
-            catImage.classList.add('closed');
-            
-            setTimeout(() => {
-                // Solo volver a imagen abierta si no está en modo click sostenido
-                if (!isMouseDown) {
-                    catImage.src = IMAGE_OPEN;
-                    catImage.classList.remove('closed');
-                    catImage.classList.add('open');
-                }
-            }, 100);
-            
-            createClickPopup(event);
-        }
-        
         function playClickSound() {
             try {
                 clickSound.currentTime = 0;
@@ -764,12 +777,20 @@
             const rect = catContainer.getBoundingClientRect();
             let x, y;
             
-            if (event.type === 'touchstart') {
+            // Para eventos táctiles
+            if (event.touches && event.touches[0]) {
                 x = event.touches[0].clientX - rect.left;
                 y = event.touches[0].clientY - rect.top;
-            } else {
+            } 
+            // Para eventos de mouse
+            else if (event.clientX && event.clientY) {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
+            }
+            // Posición por defecto (centro)
+            else {
+                x = rect.width / 2;
+                y = rect.height / 2;
             }
             
             x = Math.max(20, Math.min(rect.width - 20, x));
@@ -832,15 +853,6 @@
                 e.preventDefault();
             }
         }, { passive: false });
-        
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(e) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
     </script>
 </body>
 </html>
