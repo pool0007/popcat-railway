@@ -106,7 +106,7 @@
             filter: brightness(0.7);
         }
         
-        /* Animación del +1 mejorada para móviles */
+        /* Animación del +1 */
         .click-popup {
             position: absolute;
             font-size: clamp(1.5rem, 6vw, 2.5rem);
@@ -134,59 +134,163 @@
             }
         }
         
-        .leaderboard {
+        /* Leaderboard Minimizado */
+        .leaderboard-minimized {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-top: 25px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .leaderboard-minimized:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .top-country {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            justify-content: flex-start;
+        }
+        
+        .medal {
+            font-size: 1.8rem;
+            margin-right: 5px;
+        }
+        
+        .gold {
+            color: #FFD700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+        
+        .silver {
+            color: #C0C0C0;
+            text-shadow: 0 0 6px rgba(192, 192, 192, 0.5);
+        }
+        
+        .bronze {
+            color: #CD7F32;
+            text-shadow: 0 0 6px rgba(205, 127, 50, 0.5);
+        }
+        
+        .country-flag {
+            width: 30px;
+            height: 20px;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .country-name {
+            font-weight: bold;
+            font-size: clamp(1rem, 4vw, 1.2rem);
+            text-align: left;
+        }
+        
+        .country-clicks {
+            font-size: clamp(1.1rem, 4vw, 1.3rem);
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+        
+        .toggle-arrow {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+            opacity: 0.8;
+            margin-left: 15px;
+        }
+        
+        .toggle-arrow.expanded {
+            transform: rotate(180deg);
+        }
+        
+        /* Leaderboard Expandido */
+        .leaderboard-expanded {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
             border-radius: 15px;
             padding: 20px 15px;
-            margin-top: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            animation: slideDown 0.3s ease-out;
         }
         
-        .leaderboard h2 {
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .leaderboard-expanded h2 {
             margin-bottom: 15px;
-            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-size: clamp(1.3rem, 5vw, 1.8rem);
+            color: #ffeb3b;
         }
         
-        table {
+        .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: clamp(0.8rem, 3vw, 1rem);
+            font-size: clamp(0.85rem, 3vw, 1rem);
         }
         
-        th, td {
-            padding: 10px 8px;
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        th {
+        .leaderboard-table th {
             background-color: rgba(255, 255, 255, 0.15);
             font-weight: bold;
-            font-size: clamp(0.7rem, 3vw, 0.9rem);
+            font-size: clamp(0.75rem, 3vw, 0.9rem);
+            color: #ffeb3b;
         }
         
-        tr:hover {
+        .leaderboard-table tr:hover {
             background-color: rgba(255, 255, 255, 0.08);
         }
         
-        .country-flag {
-            width: 25px;
-            height: 16px;
-            margin-right: 8px;
-            vertical-align: middle;
-            border-radius: 2px;
+        .rank-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+        
+        .medal-small {
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .current-user {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2)) !important;
+            border-left: 3px solid #ffeb3b;
         }
         
         .loading {
             opacity: 0.6;
             pointer-events: none;
-        }
-        
-        #loading-message {
-            padding: 20px;
-            font-style: italic;
-            font-size: clamp(0.9rem, 4vw, 1.1rem);
         }
         
         .success-badge {
@@ -198,78 +302,42 @@
             font-size: clamp(0.9rem, 4vw, 1.1rem);
         }
         
-        /* Mejoras específicas para móviles */
+        /* Responsive */
         @media (max-width: 480px) {
-            body {
-                padding: 10px;
+            .leaderboard-minimized {
+                padding: 12px 15px;
             }
             
-            .container {
-                padding: 5px;
+            .top-country {
+                gap: 8px;
             }
             
-            .stats-container {
-                grid-template-columns: 1fr;
-                gap: 12px;
+            .country-flag {
+                width: 25px;
+                height: 16px;
             }
             
-            .stat-box {
-                padding: 12px 8px;
-                min-height: 80px;
+            .medal {
+                font-size: 1.5rem;
             }
             
-            .cat-container {
-                margin: 15px auto;
-            }
-            
-            .leaderboard {
-                padding: 15px 10px;
-                margin-top: 20px;
-            }
-            
-            th, td {
-                padding: 8px 6px;
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding: 10px 6px;
             }
         }
         
         @media (max-width: 360px) {
-            .stat-box {
-                padding: 10px 6px;
+            .leaderboard-minimized {
+                padding: 10px 12px;
             }
             
-            th, td {
-                padding: 6px 4px;
-                font-size: 0.75rem;
+            .country-name {
+                font-size: 0.9rem;
             }
             
-            .country-flag {
-                width: 20px;
-                height: 14px;
-            }
-        }
-        
-        /* Soporte para orientación landscape en móviles */
-        @media (max-height: 600px) and (orientation: landscape) {
-            .container {
-                padding: 5px;
-            }
-            
-            .stats-container {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-                margin-bottom: 15px;
-            }
-            
-            .stat-box {
-                padding: 8px 6px;
-                min-height: 70px;
-            }
-            
-            .cat-container {
-                width: min(40vh, 250px);
-                height: min(40vh, 250px);
-                font-size: min(30vh, 120px);
-                margin: 10px auto;
+            .country-clicks {
+                font-size: 1rem;
             }
         }
     </style>
@@ -277,7 +345,7 @@
 <body>
     <div class="container">
         <div class="success-badge">
-            
+            ✅ PopCat Click - Global Challenge Live!
         </div>
         
         <header>
@@ -304,13 +372,22 @@
         
         <div class="cat-container" id="cat-container">
             <div class="cat open" id="cat">😺</div>
-            <!-- +1 popups will appear here -->
         </div>
         
-        <div class="leaderboard">
+        <!-- Leaderboard Minimizado -->
+        <div class="leaderboard-minimized" id="leaderboard-minimized">
+            <div class="leaderboard-header">
+                <div class="top-country" id="top-country">
+                    <!-- Top country will be loaded here -->
+                </div>
+                <div class="toggle-arrow" id="toggle-arrow">▼</div>
+            </div>
+        </div>
+        
+        <!-- Leaderboard Expandido (oculto inicialmente) -->
+        <div class="leaderboard-expanded" id="leaderboard-expanded" style="display: none;">
             <h2>Country Leaderboard</h2>
-            <div id="loading-message">Loading leaderboard...</div>
-            <table>
+            <table class="leaderboard-table">
                 <thead>
                     <tr>
                         <th>Rank</th>
@@ -337,6 +414,8 @@
         let userId = generateUserId();
         let clickQueue = [];
         let isProcessing = false;
+        let isLeaderboardExpanded = false;
+        let currentLeaderboard = [];
         
         // DOM elements
         const userClicksElement = document.getElementById('user-clicks');
@@ -344,8 +423,11 @@
         const userCountryElement = document.getElementById('user-country');
         const catContainer = document.getElementById('cat-container');
         const catElement = document.getElementById('cat');
+        const leaderboardMinimized = document.getElementById('leaderboard-minimized');
+        const leaderboardExpanded = document.getElementById('leaderboard-expanded');
         const leaderboardBody = document.getElementById('leaderboard-body');
-        const loadingMessage = document.getElementById('loading-message');
+        const topCountryElement = document.getElementById('top-country');
+        const toggleArrow = document.getElementById('toggle-arrow');
         
         // Initialize app
         document.addEventListener('DOMContentLoaded', async function() {
@@ -358,6 +440,9 @@
             // Event listeners
             catContainer.addEventListener('click', handleCatClick);
             catContainer.addEventListener('touchstart', handleCatClick, { passive: true });
+            
+            // Leaderboard toggle
+            leaderboardMinimized.addEventListener('click', toggleLeaderboard);
             
             // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
@@ -404,24 +489,116 @@
                 
                 totalClicks = data.totalClicks;
                 totalClicksElement.textContent = totalClicks.toLocaleString();
+                currentLeaderboard = data.leaderboard || [];
                 
-                updateLeaderboardUI(data.leaderboard);
-                loadingMessage.style.display = 'none';
+                updateMinimizedLeaderboard(currentLeaderboard);
+                if (isLeaderboardExpanded) {
+                    updateExpandedLeaderboard(currentLeaderboard);
+                }
             } catch (error) {
                 console.log('Loading leaderboard:', error);
             }
         }
         
+        function updateMinimizedLeaderboard(leaderboardData) {
+            if (!leaderboardData || leaderboardData.length === 0) {
+                topCountryElement.innerHTML = '<span>No data yet</span>';
+                return;
+            }
+            
+            const topCountry = leaderboardData[0];
+            const medal = getMedal(1);
+            
+            topCountryElement.innerHTML = `
+                <span class="medal ${medal.class}">${medal.icon}</span>
+                <img src="https://flagcdn.com/w40/${topCountry.countryCode}.png" 
+                     alt="${topCountry.countryName}" 
+                     class="country-flag">
+                <span class="country-name">${topCountry.countryName}</span>
+                <span class="country-clicks">${topCountry.totalClicks.toLocaleString()}</span>
+            `;
+        }
+        
+        function updateExpandedLeaderboard(leaderboardData) {
+            if (!leaderboardData || leaderboardData.length === 0) {
+                leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No data yet</td></tr>';
+                return;
+            }
+            
+            leaderboardBody.innerHTML = '';
+            
+            leaderboardData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const medal = getMedal(index + 1);
+                const isCurrentUser = item.countryName === userCountry;
+                
+                if (isCurrentUser) {
+                    row.classList.add('current-user');
+                }
+                
+                // Rank with medal
+                const rankCell = document.createElement('td');
+                rankCell.className = 'rank-cell';
+                rankCell.innerHTML = `
+                    <span class="medal-small ${medal.class}">${medal.icon}</span>
+                    <span>${index + 1}</span>
+                `;
+                row.appendChild(rankCell);
+                
+                // Country with flag
+                const countryCell = document.createElement('td');
+                countryCell.innerHTML = `
+                    <img src="https://flagcdn.com/w40/${item.countryCode}.png" 
+                         alt="${item.countryName}" 
+                         class="country-flag"
+                         style="vertical-align: middle; margin-right: 8px;">
+                    ${item.countryName}
+                `;
+                row.appendChild(countryCell);
+                
+                // Clicks
+                const clicksCell = document.createElement('td');
+                clicksCell.textContent = item.totalClicks.toLocaleString();
+                row.appendChild(clicksCell);
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+        
+        function getMedal(rank) {
+            switch(rank) {
+                case 1:
+                    return { icon: '🥇', class: 'gold' };
+                case 2:
+                    return { icon: '🥈', class: 'silver' };
+                case 3:
+                    return { icon: '🥉', class: 'bronze' };
+                case 4:
+                    return { icon: '🏅', class: 'bronze' };
+                default:
+                    return { icon: '', class: '' };
+            }
+        }
+        
+        function toggleLeaderboard() {
+            isLeaderboardExpanded = !isLeaderboardExpanded;
+            
+            if (isLeaderboardExpanded) {
+                leaderboardExpanded.style.display = 'block';
+                toggleArrow.classList.add('expanded');
+                updateExpandedLeaderboard(currentLeaderboard);
+            } else {
+                leaderboardExpanded.style.display = 'none';
+                toggleArrow.classList.remove('expanded');
+            }
+        }
+        
         function handleCatClick(event) {
-            // Prevent multiple rapid clicks on mobile
             if (event.type === 'touchstart') {
                 event.preventDefault();
             }
             
-            // Immediate visual feedback
             animateCatClick(event);
-            
-            // Add to queue and process
             clickQueue.push(true);
             if (!isProcessing) {
                 processClickQueue();
@@ -429,7 +606,6 @@
         }
         
         function animateCatClick(event) {
-            // Fast cat animation
             catElement.classList.remove('open');
             catElement.classList.add('closed');
             
@@ -438,7 +614,6 @@
                 catElement.classList.add('open');
             }, 50);
             
-            // Create +1 popup
             createClickPopup(event);
         }
         
@@ -447,7 +622,6 @@
             popup.className = 'click-popup';
             popup.textContent = '+1';
             
-            // Position near click/touch
             const rect = catContainer.getBoundingClientRect();
             let x, y;
             
@@ -459,7 +633,6 @@
                 y = event.clientY - rect.top;
             }
             
-            // Ensure popup stays within cat container
             x = Math.max(20, Math.min(rect.width - 20, x));
             y = Math.max(20, Math.min(rect.height - 20, y));
             
@@ -468,7 +641,6 @@
             
             catContainer.appendChild(popup);
             
-            // Remove after animation
             setTimeout(() => {
                 if (popup.parentNode) {
                     popup.remove();
@@ -503,60 +675,21 @@
                 }
             } catch (error) {
                 console.log('Click registration:', error);
-                // Local fallback
                 userClicks++;
                 totalClicks++;
                 userClicksElement.textContent = userClicks.toLocaleString();
                 totalClicksElement.textContent = totalClicks.toLocaleString();
             }
             
-            // Remove processed click
             clickQueue.shift();
             isProcessing = false;
             
-            // Process next in queue
             if (clickQueue.length > 0) {
                 setTimeout(processClickQueue, 30);
             }
         }
         
-        function updateLeaderboardUI(leaderboardData) {
-            if (!leaderboardData || leaderboardData.length === 0) {
-                leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No data yet</td></tr>';
-                return;
-            }
-            
-            leaderboardBody.innerHTML = '';
-            
-            leaderboardData.forEach((item, index) => {
-                const row = document.createElement('tr');
-                
-                // Rank
-                const positionCell = document.createElement('td');
-                positionCell.textContent = index + 1;
-                row.appendChild(positionCell);
-                
-                // Country with flag
-                const countryCell = document.createElement('td');
-                const flagImg = document.createElement('img');
-                flagImg.src = `https://flagcdn.com/w40/${item.countryCode}.png`;
-                flagImg.alt = `${item.countryName} flag`;
-                flagImg.className = 'country-flag';
-                flagImg.loading = 'lazy';
-                countryCell.appendChild(flagImg);
-                countryCell.appendChild(document.createTextNode(item.countryName));
-                row.appendChild(countryCell);
-                
-                // Clicks
-                const clicksCell = document.createElement('td');
-                clicksCell.textContent = item.totalClicks.toLocaleString();
-                row.appendChild(clicksCell);
-                
-                leaderboardBody.appendChild(row);
-            });
-        }
-        
-        // Prevent zoom on double-tap (iOS)
+        // Prevent zoom on double-tap
         document.addEventListener('touchstart', function(e) {
             if (e.touches.length > 1) {
                 e.preventDefault();
