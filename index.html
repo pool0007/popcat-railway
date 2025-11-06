@@ -85,7 +85,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: all 0.1s ease;
+            transition: all 0.05s ease; /* Reducido para mejor respuesta */
             border-radius: 20px;
         }
         
@@ -96,6 +96,13 @@
         .cat-image.closed {
             filter: brightness(0.8);
             transform: scale(0.98);
+        }
+        
+        /* Preload de imágenes */
+        .preload {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
         }
         
         /* Animación del +1 */
@@ -417,11 +424,17 @@
     </style>
 </head>
 <body>
+    <!-- Preload de imágenes para mejor rendimiento -->
+    <div class="preload">
+        <img src="image1.png" alt="preload-open">
+        <img src="image2.png" alt="preload-closed">
+    </div>
+
     <div class="container">
         <div class="main-content">
             <header>
                 <h1>Pop-Dak</h1>
-                <p class="subtitle">Click to add points to your country! 🎯</p>
+                <!-- Subtítulo removido como solicitaste -->
             </header>
             
             <div class="cat-container" id="cat-container">
@@ -491,19 +504,37 @@
         const toggleArrow = document.getElementById('toggle-arrow');
         const clickSound = document.getElementById('click-sound');
         
-        // Image paths
+        // Image paths - Precargadas
         const IMAGE_OPEN = 'image1.png';
         const IMAGE_CLOSED = 'image2.png';
+        
+        // Preload images
+        function preloadImages() {
+            const openImg = new Image();
+            const closedImg = new Image();
+            openImg.src = IMAGE_OPEN;
+            closedImg.src = IMAGE_CLOSED;
+            
+            openImg.onload = function() {
+                console.log('Open image loaded');
+            };
+            closedImg.onload = function() {
+                console.log('Closed image loaded');
+            };
+        }
         
         // Initialize app
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Starting Pop-Dak...');
             
+            // Preload images immediately
+            preloadImages();
+            
             await detectCountry();
             await loadUserData();
             await loadLeaderboard();
             
-            // Event listeners simples
+            // Event listeners optimizados
             setupClickEvents();
             
             // Leaderboard toggle
@@ -516,6 +547,7 @@
         function setupClickEvents() {
             // Para desktop - mousedown/mouseup para imagen sostenida
             catContainer.addEventListener('mousedown', function(e) {
+                e.preventDefault();
                 isMouseDown = true;
                 clickStartTime = Date.now();
                 changeToClosedImage();
@@ -631,12 +663,14 @@
         }
         
         function changeToClosedImage() {
+            // Cambio inmediato sin esperar a que cargue
             catImage.src = IMAGE_CLOSED;
             catImage.classList.remove('open');
             catImage.classList.add('closed');
         }
         
         function changeToOpenImage() {
+            // Cambio inmediato
             catImage.src = IMAGE_OPEN;
             catImage.classList.remove('closed');
             catImage.classList.add('open');
