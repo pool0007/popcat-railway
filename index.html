@@ -479,6 +479,8 @@
         let isLeaderboardExpanded = false;
         let currentLeaderboard = [];
         let isMouseDown = false;
+        let lastClickTime = 0;
+        let clickTimeout = null;
         
         // DOM elements
         const catContainer = document.getElementById('cat-container');
@@ -502,19 +504,8 @@
             await loadUserData();
             await loadLeaderboard();
             
-            // Event listeners para clicks normales
-            catContainer.addEventListener('click', handleSingleClick);
-            catContainer.addEventListener('touchstart', handleSingleClick, { passive: true });
-            
-            // Event listeners para click sostenido (solo para cambiar imagen)
-            catContainer.addEventListener('mousedown', startContinuousClick);
-            catContainer.addEventListener('mouseup', stopContinuousClick);
-            catContainer.addEventListener('mouseleave', stopContinuousClick);
-            
-            // Para móviles
-            catContainer.addEventListener('touchstart', startContinuousClickMobile, { passive: true });
-            catContainer.addEventListener('touchend', stopContinuousClick);
-            catContainer.addEventListener('touchcancel', stopContinuousClick);
+            // Event listeners unificados para evitar conflictos
+            setupClickEvents();
             
             // Leaderboard toggle
             leaderboardMinimized.addEventListener('click', toggleLeaderboard);
@@ -522,6 +513,23 @@
             // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
         });
+        
+        function setupClickEvents() {
+            // Para desktop
+            catContainer.addEventListener('mousedown', handleMouseDown);
+            catContainer.addEventListener('mouseup', handleMouseUp);
+            catContainer.addEventListener('mouseleave', handleMouseUp);
+            
+            // Para móviles
+            catContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+            catContainer.addEventListener('touchend', handleTouchEnd);
+            catContainer.addEventListener('touchcancel', handleTouchEnd);
+            
+            // Evitar el evento click por defecto para evitar doble disparo
+            catContainer.addEventListener('click', function(e) {
+                e.preventDefault();
+            });
+        }
         
         function generateUserId() {
             let id = localStorage.getItem('popdak_userId');
@@ -569,6 +577,69 @@
             } catch (error) {
                 console.log('Loading leaderboard:', error);
             }
+        }
+        
+        // Event handlers unificados
+        function handleMouseDown(e) {
+            e.preventDefault();
+            isMouseDown = true;
+            changeToClosedImage();
+        }
+        
+        function handleMouseUp(e) {
+            if (isMouseDown) {
+                isMouseDown = false;
+                const now = Date.now();
+                
+                // Si fue un click rápido (menos de 300ms), contar como click
+                if (now - lastClickTime < 300) {
+                    processClick(e);
+                }
+                
+                changeToOpenImage();
+            }
+        }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            isMouseDown = true;
+            lastClickTime = Date.now();
+            changeToClosedImage();
+        }
+        
+        function handleTouchEnd(e) {
+            if (isMouseDown) {
+                isMouseDown = false;
+                const now = Date.now();
+                
+                // Si fue un touch rápido (menos de 300ms), contar como click
+                if (now - lastClickTime < 300) {
+                    processClick(e);
+                }
+                
+                changeToOpenImage();
+            }
+        }
+        
+        function processClick(event) {
+            createClickPopup(event);
+            playClickSound();
+            clickQueue.push(true);
+            if (!isProcessing) {
+                processClickQueue();
+            }
+        }
+        
+        function changeToClosedImage() {
+            catImage.src = IMAGE_CLOSED;
+            catImage.classList.remove('open');
+            catImage.classList.add('closed');
+        }
+        
+        function changeToOpenImage() {
+            catImage.src = IMAGE_OPEN;
+            catImage.classList.remove('closed');
+            catImage.classList.add('open');
         }
         
         function updateMinimizedLeaderboard(leaderboardData) {
@@ -687,64 +758,6 @@
             }
         }
         
-        // Click único - SUMA CLICKS Y MUESTRA +1
-        function handleSingleClick(event) {
-            if (event.type === 'touchstart') {
-                event.preventDefault();
-            }
-            
-            // Solo procesar si NO es un click sostenido
-            if (!isMouseDown) {
-                animateCatClick(event);
-                playClickSound();
-                clickQueue.push(true);
-                if (!isProcessing) {
-                    processClickQueue();
-                }
-            }
-        }
-        
-        // Click sostenido - SOLO cambia la imagen
-        function startContinuousClick() {
-            isMouseDown = true;
-            // Cambiar a imagen cerrada inmediatamente
-            catImage.src = IMAGE_CLOSED;
-            catImage.classList.remove('open');
-            catImage.classList.add('closed');
-        }
-        
-        function stopContinuousClick() {
-            isMouseDown = false;
-            // Volver a imagen abierta
-            catImage.src = IMAGE_OPEN;
-            catImage.classList.remove('closed');
-            catImage.classList.add('open');
-        }
-        
-        // Click sostenido - Móvil
-        function startContinuousClickMobile(event) {
-            event.preventDefault();
-            startContinuousClick();
-        }
-        
-        function animateCatClick(event) {
-            // Cambiar brevemente a imagen cerrada y crear +1
-            catImage.src = IMAGE_CLOSED;
-            catImage.classList.remove('open');
-            catImage.classList.add('closed');
-            
-            setTimeout(() => {
-                // Solo volver a imagen abierta si no está en modo click sostenido
-                if (!isMouseDown) {
-                    catImage.src = IMAGE_OPEN;
-                    catImage.classList.remove('closed');
-                    catImage.classList.add('open');
-                }
-            }, 100);
-            
-            createClickPopup(event);
-        }
-        
         function playClickSound() {
             try {
                 clickSound.currentTime = 0;
@@ -764,12 +777,20 @@
             const rect = catContainer.getBoundingClientRect();
             let x, y;
             
-            if (event.type === 'touchstart') {
+            // Para eventos táctiles
+            if (event.touches && event.touches[0]) {
                 x = event.touches[0].clientX - rect.left;
                 y = event.touches[0].clientY - rect.top;
-            } else {
+            } 
+            // Para eventos de mouse
+            else if (event.clientX && event.clientY) {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
+            }
+            // Posición por defecto (centro)
+            else {
+                x = rect.width / 2;
+                y = rect.height / 2;
             }
             
             x = Math.max(20, Math.min(rect.width - 20, x));
