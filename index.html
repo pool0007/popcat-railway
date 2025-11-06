@@ -17,6 +17,7 @@
             color: white;
             min-height: 100vh;
             padding: 20px;
+            overflow-x: hidden;
         }
         
         .container {
@@ -73,11 +74,13 @@
             width: 300px;
             height: 300px;
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: transform 0.05s;
             font-size: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            user-select: none;
         }
         
         .cat-container:active {
@@ -86,11 +89,34 @@
         
         .cat.open {
             filter: brightness(1);
+            transition: filter 0.1s;
         }
         
         .cat.closed {
-            filter: brightness(0.8);
-            transform: scale(0.9);
+            filter: brightness(0.7);
+        }
+        
+        /* Animación del +1 */
+        .click-popup {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 100;
+        }
+        
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(1.5);
+            }
         }
         
         .leaderboard {
@@ -210,7 +236,7 @@
 <body>
     <div class="container">
         <div class="success-badge">
-            ✅ PopCat Click - ¡Funcionando en Railway!
+            ✅ PopCat Click - ¡Optimizado y con Animaciones!
         </div>
         
         <header>
@@ -237,6 +263,7 @@
         
         <div class="cat-container" id="cat-container">
             <div class="cat open" id="cat">😺</div>
+            <!-- Aquí aparecerán los +1 -->
         </div>
         
         <button class="click-button" id="auto-clicker">Activar Auto-Clicker (10 seg)</button>
@@ -270,6 +297,7 @@
         let userCountryCode = "unknown";
         let userId = generateUserId();
         let autoClickerActive = false;
+        let clickQueue = []; // Cola para manejar múltiples clicks rápidos
         
         // Elementos DOM
         const userClicksElement = document.getElementById('user-clicks');
@@ -283,8 +311,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Iniciando aplicación...');
-            console.log('API Base URL:', API_BASE_URL);
+            console.log('Iniciando aplicación OPTIMIZADA...');
             
             await detectCountry();
             await loadUserData();
@@ -293,8 +320,8 @@
             catContainer.addEventListener('click', handleCatClick);
             autoClickerButton.addEventListener('click', activateAutoClicker);
             
-            // Actualizar leaderboard cada 5 segundos
-            setInterval(loadLeaderboard, 5000);
+            // Actualizar leaderboard cada 3 segundos (más frecuente)
+            setInterval(loadLeaderboard, 3000);
         });
         
         function generateUserId() {
@@ -313,9 +340,7 @@
                 userCountry = data.country;
                 userCountryCode = data.country.toLowerCase();
                 userCountryElement.textContent = userCountry;
-                console.log('País detectado:', userCountry);
             } catch (error) {
-                console.error('Error detectando país:', error);
                 userCountry = navigator.language.split('-')[1] || 'Desconocido';
                 userCountryCode = navigator.language.split('-')[1]?.toLowerCase() || 'unknown';
                 userCountryElement.textContent = userCountry;
@@ -325,11 +350,9 @@
         async function loadUserData() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/user/${userId}`);
-                if (!response.ok) throw new Error('Error en la respuesta');
                 const data = await response.json();
                 userClicks = data.userClicks;
                 userClicksElement.textContent = userClicks.toLocaleString();
-                console.log('Datos de usuario cargados:', userClicks);
             } catch (error) {
                 console.error('Error cargando datos del usuario:', error);
             }
@@ -338,7 +361,6 @@
         async function loadLeaderboard() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
-                if (!response.ok) throw new Error('Error en la respuesta');
                 const data = await response.json();
                 
                 totalClicks = data.totalClicks;
@@ -348,12 +370,58 @@
                 loadingMessage.style.display = 'none';
             } catch (error) {
                 console.error('Error cargando leaderboard:', error);
-                loadingMessage.textContent = 'Error cargando leaderboard';
             }
         }
         
-        async function handleCatClick() {
-            catContainer.classList.add('loading');
+        async function handleCatClick(event) {
+            // Animación inmediata (no bloqueante)
+            animateCatClick(event);
+            
+            // Procesar click en cola para no bloquear la UI
+            clickQueue.push(true);
+            processClickQueue();
+        }
+        
+        function animateCatClick(event) {
+            // Animación del gato más rápida
+            catElement.classList.remove('open');
+            catElement.classList.add('closed');
+            
+            setTimeout(() => {
+                catElement.classList.remove('closed');
+                catElement.classList.add('open');
+            }, 50);
+            
+            // Crear animación +1
+            createClickPopup(event);
+        }
+        
+        function createClickPopup(event) {
+            const popup = document.createElement('div');
+            popup.className = 'click-popup';
+            popup.textContent = '+1';
+            
+            // Posicionar cerca del cursor
+            const rect = catContainer.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            
+            catContainer.appendChild(popup);
+            
+            // Eliminar después de la animación
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        }
+        
+        async function processClickQueue() {
+            if (clickQueue.length === 0) return;
+            
+            // Tomar un click de la cola
+            clickQueue.shift();
             
             try {
                 const response = await fetch(`${API_BASE_URL}/api/click`, {
@@ -368,46 +436,32 @@
                     })
                 });
                 
-                if (!response.ok) throw new Error('Error en la respuesta');
-                
-                const data = await response.json();
-                
-                userClicks = data.userClicks;
-                totalClicks = data.totalClicks;
-                userClicksElement.textContent = userClicks.toLocaleString();
-                totalClicksElement.textContent = totalClicks.toLocaleString();
-                
-                updateLeaderboardUI(data.leaderboard);
-                
+                if (response.ok) {
+                    const data = await response.json();
+                    userClicks = data.userClicks;
+                    totalClicks = data.totalClicks;
+                    userClicksElement.textContent = userClicks.toLocaleString();
+                    totalClicksElement.textContent = totalClicks.toLocaleString();
+                }
             } catch (error) {
                 console.error('Error registrando click:', error);
-                // Fallback local
+                // Fallback local inmediato
                 userClicks++;
                 totalClicks++;
                 userClicksElement.textContent = userClicks.toLocaleString();
                 totalClicksElement.textContent = totalClicks.toLocaleString();
             }
             
-            // Animación del gato
-            catElement.classList.remove('open');
-            catElement.classList.add('closed');
-            
-            setTimeout(() => {
-                catElement.classList.remove('closed');
-                catElement.classList.add('open');
-                catContainer.classList.remove('loading');
-            }, 100);
+            // Procesar siguiente click en la cola
+            if (clickQueue.length > 0) {
+                setTimeout(processClickQueue, 50);
+            }
         }
         
         function updateLeaderboardUI(leaderboardData) {
-            leaderboardBody.innerHTML = '';
+            if (!leaderboardData || leaderboardData.length === 0) return;
             
-            if (!leaderboardData || leaderboardData.length === 0) {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="3" style="text-align: center;">No hay datos aún</td>`;
-                leaderboardBody.appendChild(row);
-                return;
-            }
+            leaderboardBody.innerHTML = '';
             
             leaderboardData.forEach((item, index) => {
                 const row = document.createElement('tr');
@@ -441,8 +495,29 @@
             autoClickerButton.textContent = 'Auto-Clicker Activado';
             
             let secondsLeft = 10;
-            const autoClickInterval = setInterval(async () => {
-                await handleCatClick();
+            let clickCount = 0;
+            const maxClicks = 50; // Máximo de clicks en auto-clicker
+            
+            const autoClickInterval = setInterval(() => {
+                if (clickCount >= maxClicks) {
+                    clearInterval(autoClickInterval);
+                    return;
+                }
+                
+                // Simular click automático
+                const fakeEvent = {
+                    clientX: catContainer.offsetLeft + catContainer.offsetWidth / 2,
+                    clientY: catContainer.offsetTop + catContainer.offsetHeight / 2
+                };
+                
+                animateCatClick(fakeEvent);
+                clickQueue.push(true);
+                clickCount++;
+                
+                // Procesar cola más rápido en auto-clicker
+                if (clickQueue.length === 1) {
+                    processClickQueue();
+                }
                 
                 secondsLeft--;
                 autoClickerButton.textContent = `Auto-Clicker: ${secondsLeft}s`;
@@ -453,7 +528,7 @@
                     autoClickerButton.disabled = false;
                     autoClickerButton.textContent = 'Activar Auto-Clicker (10 seg)';
                 }
-            }, 200);
+            }, 100); // 10 clicks por segundo
         }
     </script>
 </body>
