@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PopCat Click - Multiusuario</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        header {
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 200px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        
+        .cat-container {
+            margin: 30px auto;
+            width: 300px;
+            height: 300px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            font-size: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cat-container:active {
+            transform: scale(0.95);
+        }
+        
+        .cat.open {
+            filter: brightness(1);
+        }
+        
+        .cat.closed {
+            filter: brightness(0.8);
+            transform: scale(0.9);
+        }
+        
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .leaderboard h2 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        th {
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .country-flag {
+            width: 30px;
+            height: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .click-button {
+            background: linear-gradient(135deg, #ff8a00, #e52e71);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+        
+        .click-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .click-button:active {
+            transform: translateY(1px);
+        }
+        
+        .click-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        #loading-message {
+            padding: 20px;
+            font-style: italic;
+        }
+        
+        .success-badge {
+            background: rgba(0, 255, 0, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 255, 0, 0.5);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .stat-box {
+                min-width: 150px;
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 1.8rem;
+            }
+            
+            .cat-container {
+                width: 250px;
+                height: 250px;
+                font-size: 150px;
+            }
+            
+            table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-badge">
+            ✅ Conectado a Railway - ¡Funcionando en la nube!
+        </div>
+        
+        <header>
+            <h1>PopCat Click</h1>
+            <p class="subtitle">¡Haz clic en el gato para sumar puntos a tu país!</p>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-title">Tus Clicks</div>
+                <div class="stat-value" id="user-clicks">0</div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-title">Clicks Totales</div>
+                <div class="stat-value" id="total-clicks">0</div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-title">Tu País</div>
+                <div class="stat-value" id="user-country">Cargando...</div>
+            </div>
+        </div>
+        
+        <div class="cat-container" id="cat-container">
+            <div class="cat open" id="cat">😺</div>
+        </div>
+        
+        <button class="click-button" id="auto-clicker">Activar Auto-Clicker (10 seg)</button>
+        
+        <div class="leaderboard">
+            <h2>Leaderboard por País</h2>
+            <div id="loading-message">Cargando leaderboard...</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posición</th>
+                        <th>País</th>
+                        <th>Clicks</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- Los datos del leaderboard se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // La URL se determina automáticamente
+        const API_BASE_URL = window.location.origin;
+        
+        // Variables globales
+        let userClicks = 0;
+        let totalClicks = 0;
+        let userCountry = "Desconocido";
+        let userCountryCode = "unknown";
+        let userId = generateUserId();
+        let autoClickerActive = false;
+        
+        // Elementos DOM
+        const userClicksElement = document.getElementById('user-clicks');
+        const totalClicksElement = document.getElementById('total-clicks');
+        const userCountryElement = document.getElementById('user-country');
+        const catContainer = document.getElementById('cat-container');
+        const catElement = document.getElementById('cat');
+        const leaderboardBody = document.getElementById('leaderboard-body');
+        const autoClickerButton = document.getElementById('auto-clicker');
+        const loadingMessage = document.getElementById('loading-message');
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Iniciando aplicación...');
+            console.log('API Base URL:', API_BASE_URL);
+            
+            await detectCountry();
+            await loadUserData();
+            await loadLeaderboard();
+            
+            catContainer.addEventListener('click', handleCatClick);
+            autoClickerButton.addEventListener('click', activateAutoClicker);
+            
+            // Actualizar leaderboard cada 5 segundos
+            setInterval(loadLeaderboard, 5000);
+        });
+        
+        function generateUserId() {
+            let id = localStorage.getItem('popcat_userId');
+            if (!id) {
+                id = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('popcat_userId', id);
+            }
+            return id;
+        }
+        
+        async function detectCountry() {
+            try {
+                const response = await fetch('https://api.country.is/');
+                const data = await response.json();
+                userCountry = data.country;
+                userCountryCode = data.country.toLowerCase();
+                userCountryElement.textContent = userCountry;
+                console.log('País detectado:', userCountry);
+            } catch (error) {
+                console.error('Error detectando país:', error);
+                userCountry = navigator.language.split('-')[1] || 'Desconocido';
+                userCountryCode = navigator.language.split('-')[1]?.toLowerCase() || 'unknown';
+                userCountryElement.textContent = userCountry;
+            }
+        }
+        
+        async function loadUserData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/${userId}`);
+                if (!response.ok) throw new Error('Error en la respuesta');
+                const data = await response.json();
+                userClicks = data.userClicks;
+                userClicksElement.textContent = userClicks.toLocaleString();
+                console.log('Datos de usuario cargados:', userClicks);
+            } catch (error) {
+                console.error('Error cargando datos del usuario:', error);
+            }
+        }
+        
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
+                if (!response.ok) throw new Error('Error en la respuesta');
+                const data = await response.json();
+                
+                totalClicks = data.totalClicks;
+                totalClicksElement.textContent = totalClicks.toLocaleString();
+                
+                updateLeaderboardUI(data.leaderboard);
+                loadingMessage.style.display = 'none';
+            } catch (error) {
+                console.error('Error cargando leaderboard:', error);
+                loadingMessage.textContent = 'Error cargando leaderboard';
+            }
+        }
+        
+        async function handleCatClick() {
+            catContainer.classList.add('loading');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/click`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        countryCode: userCountryCode,
+                        countryName: userCountry
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Error en la respuesta');
+                
+                const data = await response.json();
+                
+                userClicks = data.userClicks;
+                totalClicks = data.totalClicks;
+                userClicksElement.textContent = userClicks.toLocaleString();
+                totalClicksElement.textContent = totalClicks.toLocaleString();
+                
+                updateLeaderboardUI(data.leaderboard);
+                
+            } catch (error) {
+                console.error('Error registrando click:', error);
+                // Fallback local
+                userClicks++;
+                totalClicks++;
+                userClicksElement.textContent = userClicks.toLocaleString();
+                totalClicksElement.textContent = totalClicks.toLocaleString();
+            }
+            
+            // Animación del gato
+            catElement.classList.remove('open');
+            catElement.classList.add('closed');
+            
+            setTimeout(() => {
+                catElement.classList.remove('closed');
+                catElement.classList.add('open');
+                catContainer.classList.remove('loading');
+            }, 100);
+        }
+        
+        function updateLeaderboardUI(leaderboardData) {
+            leaderboardBody.innerHTML = '';
+            
+            if (!leaderboardData || leaderboardData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="3" style="text-align: center;">No hay datos aún</td>`;
+                leaderboardBody.appendChild(row);
+                return;
+            }
+            
+            leaderboardData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                
+                const positionCell = document.createElement('td');
+                positionCell.textContent = index + 1;
+                row.appendChild(positionCell);
+                
+                const countryCell = document.createElement('td');
+                const flagImg = document.createElement('img');
+                flagImg.src = `https://flagcdn.com/w40/${item.countryCode}.png`;
+                flagImg.alt = `${item.countryName} flag`;
+                flagImg.className = 'country-flag';
+                countryCell.appendChild(flagImg);
+                countryCell.appendChild(document.createTextNode(item.countryName));
+                row.appendChild(countryCell);
+                
+                const clicksCell = document.createElement('td');
+                clicksCell.textContent = item.totalClicks.toLocaleString();
+                row.appendChild(clicksCell);
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+        
+        function activateAutoClicker() {
+            if (autoClickerActive) return;
+            
+            autoClickerActive = true;
+            autoClickerButton.disabled = true;
+            autoClickerButton.textContent = 'Auto-Clicker Activado';
+            
+            let secondsLeft = 10;
+            const autoClickInterval = setInterval(async () => {
+                await handleCatClick();
+                
+                secondsLeft--;
+                autoClickerButton.textContent = `Auto-Clicker: ${secondsLeft}s`;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(autoClickInterval);
+                    autoClickerActive = false;
+                    autoClickerButton.disabled = false;
+                    autoClickerButton.textContent = 'Activar Auto-Clicker (10 seg)';
+                }
+            }, 200);
+        }
+    </script>
+</body>
+</html>
