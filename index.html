@@ -479,7 +479,6 @@
         let isLeaderboardExpanded = false;
         let currentLeaderboard = [];
         let isMouseDown = false;
-        let clickInterval;
         
         // DOM elements
         const catContainer = document.getElementById('cat-container');
@@ -507,7 +506,7 @@
             catContainer.addEventListener('click', handleSingleClick);
             catContainer.addEventListener('touchstart', handleSingleClick, { passive: true });
             
-            // Event listeners para click sostenido
+            // Event listeners para click sostenido (solo para cambiar imagen)
             catContainer.addEventListener('mousedown', startContinuousClick);
             catContainer.addEventListener('mouseup', stopContinuousClick);
             catContainer.addEventListener('mouseleave', stopContinuousClick);
@@ -688,45 +687,34 @@
             }
         }
         
-        // Click único
+        // Click único - SUMA CLICKS Y MUESTRA +1
         function handleSingleClick(event) {
             if (event.type === 'touchstart') {
                 event.preventDefault();
             }
             
-            animateCatClick(event);
-            playClickSound();
-            clickQueue.push(true);
-            if (!isProcessing) {
-                processClickQueue();
+            // Solo procesar si NO es un click sostenido
+            if (!isMouseDown) {
+                animateCatClick(event);
+                playClickSound();
+                clickQueue.push(true);
+                if (!isProcessing) {
+                    processClickQueue();
+                }
             }
         }
         
-        // Click sostenido - Desktop
+        // Click sostenido - SOLO cambia la imagen
         function startContinuousClick() {
             isMouseDown = true;
             // Cambiar a imagen cerrada inmediatamente
             catImage.src = IMAGE_CLOSED;
             catImage.classList.remove('open');
             catImage.classList.add('closed');
-            
-            // Empezar intervalo de clicks rápidos
-            clickInterval = setInterval(() => {
-                if (isMouseDown) {
-                    createClickPopup({ clientX: catContainer.offsetLeft + catContainer.offsetWidth / 2, 
-                                    clientY: catContainer.offsetTop + catContainer.offsetHeight / 2 });
-                    playClickSound();
-                    clickQueue.push(true);
-                    if (!isProcessing) {
-                        processClickQueue();
-                    }
-                }
-            }, 100); // 10 clicks por segundo
         }
         
         function stopContinuousClick() {
             isMouseDown = false;
-            clearInterval(clickInterval);
             // Volver a imagen abierta
             catImage.src = IMAGE_OPEN;
             catImage.classList.remove('closed');
@@ -740,7 +728,7 @@
         }
         
         function animateCatClick(event) {
-            // Cambiar a imagen cerrada
+            // Cambiar brevemente a imagen cerrada y crear +1
             catImage.src = IMAGE_CLOSED;
             catImage.classList.remove('open');
             catImage.classList.add('closed');
