@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pop-Dak - Global Challenge</title>
     <style>
+        /* Tus estilos CSS existentes se mantienen igual */
         * {
             margin: 0;
             padding: 0;
@@ -85,7 +86,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: all 0.05s ease; /* Reducido para mejor respuesta */
+            transition: all 0.05s ease;
             border-radius: 20px;
         }
         
@@ -98,14 +99,12 @@
             transform: scale(0.98);
         }
         
-        /* Preload de imágenes */
         .preload {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
         
-        /* Animación del +1 */
         .click-popup {
             position: absolute;
             font-size: clamp(1.5rem, 6vw, 2.5rem);
@@ -133,7 +132,6 @@
             }
         }
         
-        /* Estilos para medallas SVG */
         .medal-svg {
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
@@ -163,7 +161,6 @@
             height: 20px;
         }
         
-        /* Leaderboard en la parte inferior */
         .leaderboard-section {
             margin-top: auto;
             padding-bottom: 10px;
@@ -280,7 +277,6 @@
             transform: rotate(180deg);
         }
         
-        /* Leaderboard Expandido */
         .leaderboard-expanded {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(15px);
@@ -350,7 +346,6 @@
             pointer-events: none;
         }
         
-        /* Responsive */
         @media (max-width: 768px) {
             .leaderboard-top {
                 flex-direction: column;
@@ -411,7 +406,6 @@
             }
         }
         
-        /* Para pantallas muy altas */
         @media (min-height: 800px) {
             .main-content {
                 justify-content: center;
@@ -424,7 +418,6 @@
     </style>
 </head>
 <body>
-    <!-- Preload de imágenes para mejor rendimiento -->
     <div class="preload">
         <img src="image1.png" alt="preload-open">
         <img src="image2.png" alt="preload-closed">
@@ -434,7 +427,6 @@
         <div class="main-content">
             <header>
                 <h1>Pop-Dak</h1>
-                <!-- Subtítulo removido como solicitaste -->
             </header>
             
             <div class="cat-container" id="cat-container">
@@ -442,18 +434,15 @@
             </div>
         </div>
         
-        <!-- Leaderboard en la parte inferior -->
         <div class="leaderboard-section">
             <div class="leaderboard-minimized" id="leaderboard-minimized">
                 <div class="leaderboard-header">
                     <div class="leaderboard-top" id="leaderboard-top">
-                        <!-- Top country and user stats will be loaded here -->
                     </div>
                     <div class="toggle-arrow" id="toggle-arrow">▼</div>
                 </div>
             </div>
             
-            <!-- Leaderboard Expandido (oculto inicialmente) -->
             <div class="leaderboard-expanded" id="leaderboard-expanded" style="display: none;">
                 <h2>Country Leaderboard</h2>
                 <table class="leaderboard-table">
@@ -465,17 +454,11 @@
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body">
-                        <!-- Leaderboard data will load here -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-
-    <!-- Audio element para el sonido -->
-    <audio id="click-sound" preload="auto">
-        <source src="sound.mp3" type="audio/mpeg">
-    </audio>
 
     <script>
         // Auto-detect API URL
@@ -494,6 +477,11 @@
         let isMouseDown = false;
         let clickStartTime = 0;
         
+        // Sistema de audio mejorado para móviles
+        let audioPool = [];
+        let currentAudioIndex = 0;
+        const AUDIO_POOL_SIZE = 5; // Número de instancias de audio para sonidos superpuestos
+        
         // DOM elements
         const catContainer = document.getElementById('cat-container');
         const catImage = document.getElementById('cat-image');
@@ -502,11 +490,49 @@
         const leaderboardBody = document.getElementById('leaderboard-body');
         const leaderboardTop = document.getElementById('leaderboard-top');
         const toggleArrow = document.getElementById('toggle-arrow');
-        const clickSound = document.getElementById('click-sound');
         
-        // Image paths - Precargadas
+        // Image paths
         const IMAGE_OPEN = 'image1.png';
         const IMAGE_CLOSED = 'image2.png';
+        
+        // Inicializar el pool de audio
+        function initializeAudioPool() {
+            for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
+                const audio = new Audio('sound.mp3');
+                audio.preload = 'auto';
+                audio.volume = 0.7; // Volumen moderado
+                audioPool.push(audio);
+            }
+            console.log(`🎵 Audio pool initialized with ${AUDIO_POOL_SIZE} instances`);
+        }
+        
+        // Función mejorada para reproducir sonido
+        function playClickSound() {
+            try {
+                const audio = audioPool[currentAudioIndex];
+                
+                // Resetear el audio
+                audio.currentTime = 0;
+                audio.volume = 0.7;
+                
+                // Reproducir
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('Audio play failed:', error);
+                        // Silenciar en caso de error para evitar interrupciones
+                        audio.volume = 0;
+                    });
+                }
+                
+                // Rotar al siguiente audio en el pool
+                currentAudioIndex = (currentAudioIndex + 1) % AUDIO_POOL_SIZE;
+                
+            } catch (error) {
+                console.log('Sound error:', error);
+            }
+        }
         
         // Preload images
         function preloadImages() {
@@ -527,7 +553,10 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Starting Pop-Dak...');
             
-            // Preload images immediately
+            // Inicializar sistema de audio primero
+            initializeAudioPool();
+            
+            // Preload images
             preloadImages();
             
             await detectCountry();
@@ -542,7 +571,35 @@
             
             // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
+            
+            // Activar audio con primer touch (requerido en iOS)
+            activateAudioOnFirstTouch();
         });
+        
+        // Función para activar audio en el primer touch (requerido en iOS)
+        function activateAudioOnFirstTouch() {
+            const activateAudio = function() {
+                // Reproducir un sonido silencioso para activar el audio
+                try {
+                    const silentAudio = new Audio();
+                    silentAudio.volume = 0.001;
+                    silentAudio.play().then(() => {
+                        console.log('🎵 Audio activated on first touch');
+                    }).catch(e => {
+                        console.log('Audio activation failed:', e);
+                    });
+                    
+                    // Remover el event listener después del primer touch
+                    document.removeEventListener('touchstart', activateAudio);
+                    document.removeEventListener('mousedown', activateAudio);
+                } catch (error) {
+                    console.log('Audio activation error:', error);
+                }
+            };
+            
+            document.addEventListener('touchstart', activateAudio, { once: true });
+            document.addEventListener('mousedown', activateAudio, { once: true });
+        }
         
         function setupClickEvents() {
             // Para desktop - mousedown/mouseup para imagen sostenida
@@ -558,7 +615,6 @@
                     const clickDuration = Date.now() - clickStartTime;
                     isMouseDown = false;
                     
-                    // Si fue un click rápido (menos de 200ms), contar como click
                     if (clickDuration < 200) {
                         handleValidClick(e);
                     }
@@ -580,6 +636,9 @@
                 isMouseDown = true;
                 clickStartTime = Date.now();
                 changeToClosedImage();
+                
+                // Reproducir sonido inmediatamente en touchstart para mejor respuesta
+                playClickSound();
             }, { passive: false });
             
             catContainer.addEventListener('touchend', function(e) {
@@ -587,9 +646,15 @@
                     const clickDuration = Date.now() - clickStartTime;
                     isMouseDown = false;
                     
-                    // Si fue un touch rápido (menos de 200ms), contar como click
                     if (clickDuration < 200) {
                         handleValidClick(e);
+                    } else {
+                        // Si fue un touch largo, solo crear el popup sin sonido adicional
+                        createClickPopup(e);
+                        clickQueue.push(true);
+                        if (!isProcessing) {
+                            processClickQueue();
+                        }
                     }
                     
                     changeToOpenImage();
@@ -606,13 +671,20 @@
         
         function handleValidClick(event) {
             createClickPopup(event);
-            playClickSound();
+            
+            // Para desktop, reproducir sonido aquí
+            if (!('ontouchstart' in window)) {
+                playClickSound();
+            }
+            // Para móviles, el sonido ya se reproduce en touchstart
+            
             clickQueue.push(true);
             if (!isProcessing) {
                 processClickQueue();
             }
         }
         
+        // El resto de las funciones se mantienen igual...
         function generateUserId() {
             let id = localStorage.getItem('popdak_userId');
             if (!id) {
@@ -663,14 +735,12 @@
         }
         
         function changeToClosedImage() {
-            // Cambio inmediato sin esperar a que cargue
             catImage.src = IMAGE_CLOSED;
             catImage.classList.remove('open');
             catImage.classList.add('closed');
         }
         
         function changeToOpenImage() {
-            // Cambio inmediato
             catImage.src = IMAGE_OPEN;
             catImage.classList.remove('closed');
             catImage.classList.add('open');
@@ -720,7 +790,6 @@
                     row.classList.add('current-user');
                 }
                 
-                // Rank with medal
                 const rankCell = document.createElement('td');
                 rankCell.className = 'rank-cell';
                 rankCell.innerHTML = `
@@ -729,7 +798,6 @@
                 `;
                 row.appendChild(rankCell);
                 
-                // Country with flag
                 const countryCell = document.createElement('td');
                 countryCell.innerHTML = `
                     <img src="https://flagcdn.com/w40/${item.countryCode}.png" 
@@ -740,7 +808,6 @@
                 `;
                 row.appendChild(countryCell);
                 
-                // Clicks
                 const clicksCell = document.createElement('td');
                 clicksCell.textContent = item.totalClicks.toLocaleString();
                 row.appendChild(clicksCell);
@@ -766,11 +833,6 @@
                         icon: '<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#CD7F32" stroke="#8B4513" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#000" font-size="10" font-weight="bold">3</text></svg>',
                         class: 'bronze' 
                     };
-                case 4:
-                    return { 
-                        icon: '<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#CD7F32" stroke="#8B4513" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#000" font-size="10" font-weight="bold">4</text></svg>',
-                        class: 'bronze' 
-                    };
                 default:
                     return { 
                         icon: `<svg width="24" height="24" viewBox="0 0 24 24" class="medal-svg"><circle cx="12" cy="12" r="10" fill="#666" stroke="#444" stroke-width="1"/><circle cx="12" cy="12" r="6" fill="#FFF" opacity="0.3"/><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="10" font-weight="bold">${rank}</text></svg>`,
@@ -792,17 +854,6 @@
             }
         }
         
-        function playClickSound() {
-            try {
-                clickSound.currentTime = 0;
-                clickSound.play().catch(e => {
-                    console.log('Audio play failed:', e);
-                });
-            } catch (error) {
-                console.log('Sound error:', error);
-            }
-        }
-        
         function createClickPopup(event) {
             const popup = document.createElement('div');
             popup.className = 'click-popup';
@@ -811,18 +862,13 @@
             const rect = catContainer.getBoundingClientRect();
             let x, y;
             
-            // Para eventos táctiles
             if (event.touches && event.touches[0]) {
                 x = event.touches[0].clientX - rect.left;
                 y = event.touches[0].clientY - rect.top;
-            } 
-            // Para eventos de mouse
-            else if (event.clientX && event.clientY) {
+            } else if (event.clientX && event.clientY) {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
-            }
-            // Posición por defecto (centro)
-            else {
+            } else {
                 x = rect.width / 2;
                 y = rect.height / 2;
             }
