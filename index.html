@@ -466,6 +466,7 @@
         
         // Global variables
         let userClicks = 0;
+        let pendingClicks = 0; // Clientes pendientes de enviar al servidor
         let totalClicks = 0;
         let userCountry = "Unknown";
         let userCountryCode = "unknown";
@@ -480,7 +481,7 @@
         // Sistema de audio mejorado para móviles
         let audioPool = [];
         let currentAudioIndex = 0;
-        const AUDIO_POOL_SIZE = 5; // Número de instancias de audio para sonidos superpuestos
+        const AUDIO_POOL_SIZE = 5;
         
         // DOM elements
         const catContainer = document.getElementById('cat-container');
@@ -500,7 +501,7 @@
             for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
                 const audio = new Audio('sound.mp3');
                 audio.preload = 'auto';
-                audio.volume = 0.7; // Volumen moderado
+                audio.volume = 0.7;
                 audioPool.push(audio);
             }
             console.log(`🎵 Audio pool initialized with ${AUDIO_POOL_SIZE} instances`);
@@ -510,25 +511,18 @@
         function playClickSound() {
             try {
                 const audio = audioPool[currentAudioIndex];
-                
-                // Resetear el audio
                 audio.currentTime = 0;
                 audio.volume = 0.7;
                 
-                // Reproducir
                 const playPromise = audio.play();
-                
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
                         console.log('Audio play failed:', error);
-                        // Silenciar en caso de error para evitar interrupciones
                         audio.volume = 0;
                     });
                 }
                 
-                // Rotar al siguiente audio en el pool
                 currentAudioIndex = (currentAudioIndex + 1) % AUDIO_POOL_SIZE;
-                
             } catch (error) {
                 console.log('Sound error:', error);
             }
@@ -560,7 +554,7 @@
             preloadImages();
             
             await detectCountry();
-            await loadUserData();
+            await loadUserData(); // Cargar datos iniciales del usuario
             await loadLeaderboard();
             
             // Event listeners optimizados
@@ -572,14 +566,16 @@
             // Update leaderboard every 3 seconds
             setInterval(loadLeaderboard, 3000);
             
-            // Activar audio con primer touch (requerido en iOS)
+            // Procesar clicks pendientes cada segundo
+            setInterval(processPendingClicks, 1000);
+            
+            // Activar audio con primer touch
             activateAudioOnFirstTouch();
         });
         
-        // Función para activar audio en el primer touch (requerido en iOS)
+        // Función para activar audio en el primer touch
         function activateAudioOnFirstTouch() {
             const activateAudio = function() {
-                // Reproducir un sonido silencioso para activar el audio
                 try {
                     const silentAudio = new Audio();
                     silentAudio.volume = 0.001;
@@ -589,7 +585,6 @@
                         console.log('Audio activation failed:', e);
                     });
                     
-                    // Remover el event listener después del primer touch
                     document.removeEventListener('touchstart', activateAudio);
                     document.removeEventListener('mousedown', activateAudio);
                 } catch (error) {
@@ -651,10 +646,7 @@
                     } else {
                         // Si fue un touch largo, solo crear el popup sin sonido adicional
                         createClickPopup(e);
-                        clickQueue.push(true);
-                        if (!isProcessing) {
-                            processClickQueue();
-                        }
+                        registerLocalClick();
                     }
                     
                     changeToOpenImage();
@@ -671,20 +663,62 @@
         
         function handleValidClick(event) {
             createClickPopup(event);
+            registerLocalClick();
             
             // Para desktop, reproducir sonido aquí
             if (!('ontouchstart' in window)) {
                 playClickSound();
             }
-            // Para móviles, el sonido ya se reproduce en touchstart
-            
-            clickQueue.push(true);
-            if (!isProcessing) {
-                processClickQueue();
-            }
         }
         
-        // El resto de las funciones se mantienen igual...
+        // NUEVA FUNCIÓN: Registrar click localmente (instantáneo)
+        function registerLocalClick() {
+            userClicks++; // Incrementar inmediatamente para feedback visual
+            pendingClicks++; // Llevar cuenta de clicks pendientes de enviar
+            updateMinimizedLeaderboard(currentLeaderboard); // Actualizar UI inmediatamente
+        }
+        
+        // NUEVA FUNCIÓN: Procesar clicks pendientes en lote
+        async function processPendingClicks() {
+            if (pendingClicks === 0 || isProcessing) return;
+            
+            isProcessing = true;
+            const clicksToSend = pendingClicks;
+            pendingClicks = 0; // Resetear contador
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/click`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        countryCode: userCountryCode,
+                        countryName: userCountry,
+                        clickCount: clicksToSend // Enviar múltiples clicks de una vez
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Actualizar con datos reales del servidor
+                    userClicks = data.userClicks;
+                    totalClicks = data.totalClicks;
+                    console.log(`✅ Sent ${clicksToSend} clicks to server`);
+                } else {
+                    // Si falla, volver a agregar los clicks pendientes
+                    pendingClicks += clicksToSend;
+                }
+            } catch (error) {
+                console.log('Click registration error:', error);
+                // Si hay error, volver a agregar los clicks pendientes
+                pendingClicks += clicksToSend;
+            }
+            
+            isProcessing = false;
+        }
+        
         function generateUserId() {
             let id = localStorage.getItem('popdak_userId');
             if (!id) {
@@ -710,7 +744,7 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/api/user/${userId}`);
                 const data = await response.json();
-                userClicks = data.userClicks;
+                userClicks = data.userClicks; // Sincronizar con servidor al inicio
                 updateMinimizedLeaderboard(currentLeaderboard);
             } catch (error) {
                 console.log('Loading user data:', error);
@@ -769,6 +803,7 @@
                          alt="${userCountry}" 
                          class="user-flag">
                     <span class="user-clicks">${userClicks.toLocaleString()}</span>
+                    ${pendingClicks > 0 ? `<span style="font-size: 0.8rem; opacity: 0.7;">(+${pendingClicks})</span>` : ''}
                 </div>
             `;
         }
@@ -886,45 +921,6 @@
                     popup.remove();
                 }
             }, 800);
-        }
-        
-        async function processClickQueue() {
-            if (clickQueue.length === 0 || isProcessing) return;
-            
-            isProcessing = true;
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/click`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        userId: userId,
-                        countryCode: userCountryCode,
-                        countryName: userCountry
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    userClicks = data.userClicks;
-                    totalClicks = data.totalClicks;
-                    updateMinimizedLeaderboard(currentLeaderboard);
-                }
-            } catch (error) {
-                console.log('Click registration:', error);
-                userClicks++;
-                totalClicks++;
-                updateMinimizedLeaderboard(currentLeaderboard);
-            }
-            
-            clickQueue.shift();
-            isProcessing = false;
-            
-            if (clickQueue.length > 0) {
-                setTimeout(processClickQueue, 30);
-            }
         }
         
         // Prevent zoom on double-tap
