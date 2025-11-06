@@ -479,6 +479,7 @@
         
         // Global variables
         let userClicks = 0;
+        let sessionClicks = 0; // Clientes de esta sesión (en vivo)
         let totalClicks = 0;
         let userCountry = "Unknown";
         let userCountryCode = "unknown";
@@ -555,10 +556,28 @@
             await loadLeaderboard();
             
             setupClickEvents();
-            leaderboardMinimized.addEventListener('click', toggleLeaderboard);
+            
+            // CORREGIDO: Event listener mejorado para móviles
+            setupLeaderboardToggle();
+            
             setInterval(loadLeaderboard, 3000);
             activateAudioOnFirstTouch();
         });
+        
+        // CORREGIDO: Configuración del toggle del leaderboard para móviles
+        function setupLeaderboardToggle() {
+            leaderboardMinimized.addEventListener('click', function(e) {
+                // Prevenir que el click se propague y afecte otros elementos
+                e.stopPropagation();
+                toggleLeaderboard();
+            });
+            
+            // También permitir click en la flecha específicamente
+            toggleArrow.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleLeaderboard();
+            });
+        }
         
         // Función para activar audio en el primer touch
         function activateAudioOnFirstTouch() {
@@ -595,8 +614,9 @@
                 createClickPopup(event);
                 playClickSound();
                 
-                // Registrar click localmente
+                // CONTEO EN VIVO: Registrar click localmente
                 userClicks++;
+                sessionClicks++;
                 updateMinimizedLeaderboard(currentLeaderboard);
                 animateClickCounter();
                 
@@ -646,7 +666,7 @@
             });
         }
         
-        // Enviar lote de clicks al servidor - CORREGIDO
+        // Enviar lote de clicks al servidor
         async function sendClickBatch() {
             if (isProcessing || clickBatch.length === 0) return;
             
@@ -655,7 +675,8 @@
             clickBatch = [];
             
             try {
-                // Enviar cada click individualmente al endpoint /api/click
+                // Enviar cada click individualmente
+                let successfulClicks = 0;
                 for (const click of batchToSend) {
                     const response = await fetch(`${API_BASE_URL}/api/click`, {
                         method: 'POST',
@@ -670,14 +691,14 @@
                     });
                     
                     if (response.ok) {
+                        successfulClicks++;
                         const data = await response.json();
-                        // Actualizar con los datos más recientes del servidor
+                        // Sincronizar con datos del servidor
                         userClicks = data.userClicks;
-                        totalClicks = data.totalClicks;
                     }
                 }
                 
-                console.log(`✅ Sent ${batchToSend.length} clicks to server`);
+                console.log(`✅ Sent ${successfulClicks}/${batchToSend.length} clicks to server`);
                 
                 // Recargar el leaderboard para mostrar datos actualizados
                 await loadLeaderboard();
